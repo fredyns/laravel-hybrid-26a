@@ -1,0 +1,141 @@
+# @island
+
+**Source URL:** https://livewire.laravel.com/docs/4.x/directive-island
+
+## Overview
+
+The `@island` directive creates isolated regions within a component that update independently, without re-rendering the entire component.
+
+## Basic Usage
+
+Wrap any portion of your template with `@island` to create an isolated region:
+
+```php
+<?php // resources/views/components/⚡dashboard.blade.php
+
+use Livewire\Attributes\Computed;
+use Livewire\Component;
+use App\Models\Revenue;
+
+new class extends Component {
+    #[Computed]
+    public function revenue()
+    {
+        // Expensive calculation...
+        return Revenue::yearToDate();
+    }
+};
+?>
+
+<div>
+    @island
+        <div>
+            Revenue: {{ $this->revenue }}
+
+            <button type="button" wire:click="$refresh">Refresh</button>
+        </div>
+    @endisland
+
+    <div>
+        <!-- Other content... -->
+    </div>
+</div>
+```
+
+When the "Refresh" button is clicked, only the island re-renders—the rest of the component remains untouched.
+
+## Lazy Loading Islands
+
+Defer an island's initial render until after the page loads using the `lazy` parameter:
+
+```html
+@island(lazy: true)
+    <div>
+        Revenue: {{ $this->revenue }}
+    </div>
+@endisland
+```
+
+The island displays a loading state initially, then fetches its content in a separate request.
+
+## Lazy vs Deferred
+
+By default, lazy waits until the island is visible in the viewport. Use `defer` to load immediately after page load:
+
+```html
+{{-- Loads when scrolled into view --}}
+@island(lazy: true)
+    <!-- ... -->
+@endisland
+
+{{-- Loads immediately after page load --}}
+@island(defer: true)
+    <!-- ... -->
+@endisland
+```
+
+## Custom Loading States
+
+Use `@placeholder` to customize what displays while loading:
+
+```html
+@island(lazy: true)
+    @placeholder
+        <div class="animate-pulse">
+            <div class="h-32 bg-gray-200 rounded"></div>
+        </div>
+    @endplaceholder
+
+    <div>
+        Revenue: {{ $this->revenue }}
+    </div>
+@endisland
+```
+
+## Named Islands
+
+Give islands names to target them from elsewhere in your component:
+
+```html
+@island(name: 'revenue')
+    <div>Revenue: {{ $this->revenue }}</div>
+@endisland
+
+<button type="button" wire:click="$refresh" wire:island="revenue">
+    Refresh revenue
+</button>
+```
+
+The `wire:island` directive scopes updates to specific islands.
+
+## Why Use Islands?
+
+Islands provide performance isolation without the overhead of creating separate child components, managing props, or dealing with component communication.
+
+Use islands when:
+- You want to isolate expensive computations
+- You need independent update regions within one component
+- You want simpler architecture than nested components
+
+## Reference
+
+```html
+@island(
+    ?string $name = null,
+    bool $lazy = false,
+    bool $defer = false,
+)
+    <!-- Content -->
+@endisland
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `$name` | ?string | null | A unique name for targeting the island with `wire:island` |
+| `$lazy` | bool | false | Defer rendering until the island is visible in the viewport |
+| `$defer` | bool | false | Load immediately after page load instead of waiting for viewport visibility |
+
+## See Also
+
+- [Islands](../features/islands.md) — Complete guide to islands
+- [@placeholder](./placeholder.md) — Custom loading states

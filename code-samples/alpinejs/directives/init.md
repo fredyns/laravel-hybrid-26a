@@ -1,0 +1,105 @@
+# x-init
+
+**Source URL:** https://alpinejs.dev/directives/init
+
+## Overview
+
+The `x-init` directive allows you to hook into the initialization phase of any element in Alpine.
+
+```html
+<div x-init="console.log('I\'m being initialized!')"></div>
+```
+
+In the above example, "I'm being initialized!" will be output in the console before it makes further DOM updates.
+
+---
+
+## Fetching Data on Init
+
+Consider another example where `x-init` is used to fetch some JSON and store it in `x-data` before the component is processed.
+
+```html
+<div
+    x-data="{ posts: [] }"
+    x-init="posts = await (await fetch('/posts')).json()"
+>...</div>
+```
+
+---
+
+## $nextTick
+
+Sometimes, you want to wait until after Alpine has completely finished rendering to execute some code.
+
+This would be something like `useEffect(..., [])` in React, or `mount` in Vue.
+
+By using Alpine's internal `$nextTick` magic, you can make this happen.
+
+```html
+<div x-init="$nextTick(() => { ... })"></div>
+```
+
+---
+
+## Standalone x-init
+
+You can add `x-init` to any elements inside or outside an `x-data` HTML block. For example:
+
+```html
+<div x-data>
+    <span x-init="console.log('I can initialize')"></span>
+</div>
+ 
+<span x-init="console.log('I can initialize too')"></span>
+```
+
+---
+
+## Auto-evaluate init() Method
+
+If the `x-data` object of a component contains an `init()` method, it will be called automatically. For example:
+
+```html
+<div x-data="{
+    init() {
+        console.log('I am called automatically')
+    }
+}">
+    ...
+</div>
+```
+
+This is also the case for components that were registered using the `Alpine.data()` syntax.
+
+```javascript
+Alpine.data('dropdown', () => ({
+    init() {
+        console.log('I will get evaluated when initializing each "dropdown" component.')
+    },
+}))
+```
+
+### Execution Order
+
+If you have both an `x-data` object containing an `init()` method and an `x-init` directive, the `x-data` method will be called before the directive.
+
+```html
+<div
+    x-data="{
+        init() {
+            console.log('I am called first')
+        }
+    }"
+    x-init="console.log('I am called second')"
+    >
+    ...
+</div>
+```
+
+---
+
+## See Also
+
+- [Lifecycle](../essentials/lifecycle.md) — Component lifecycle hooks
+- [$nextTick](../magics/nextTick.md) — Wait for DOM updates
+- [x-data](./data.md) — Declare reactive data
