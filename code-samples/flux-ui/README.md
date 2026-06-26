@@ -1,6 +1,7 @@
 # Flux UI Code Samples
 
 This folder mirrors the official Flux documentation structure.
+Updated: 2026-06-26
 
 - [Guides](#guides)
 - [Components](#components)
@@ -25,8 +26,10 @@ This folder mirrors the official Flux documentation structure.
 - [Calendar](./components/calendar.md)
 - [Callout](./components/callout.md)
 - [Card](./components/card.md)
+- [Carousel](./components/carousel.md)
 - [Chart](./components/chart.md)
 - [Checkbox](./components/checkbox.md)
+- [Color picker](./components/color-picker.md)
 - [Command palette](./components/command.md)
 - [Composer](./components/composer.md)
 - [Context menu](./components/context.md)
