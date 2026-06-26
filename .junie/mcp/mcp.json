@@ -6,6 +6,10 @@
                 "C:\\Dev\\_php\\laravel-wire-26a\\artisan",
                 "boost:mcp"
             ]
+        },
+        "chrome-devtools": {
+            "command": "npx",
+            "args": ["chrome-devtools-mcp@latest"]
         }
     }
 }
