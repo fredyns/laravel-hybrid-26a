@@ -1,6 +1,7 @@
 # LIVEWIRE DOCUMENTATION
  
 source: https://livewire.laravel.com/docs/4.x/
+update: 2026-06-26
  
 Livewire allows you to build dynamic, reactive interfaces using only PHP—no JavaScript required. Instead of writing frontend code in JavaScript frameworks, you write simple PHP classes and Blade templates, and Livewire handles all the complex JavaScript behind the scenes. To demonstrate, we'll build a simple post creation form with real-time validation. You'll see how Livewire can validate inputs and update the page dynamically without writing a single line of JavaScript or manually handling AJAX requests.
 
