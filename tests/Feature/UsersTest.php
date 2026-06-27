@@ -113,13 +113,14 @@ test('an existing user can be edited through the form modal', function () {
     expect($user->email)->toBe('after@example.test');
 });
 
-test('a user can be deleted from the index', function () {
+test('a user can be deleted from the show page', function () {
     $this->actingAs(adminUser());
 
     $user = User::factory()->create();
 
-    Livewire::test('pages::users.index')
-        ->call('delete', $user->id);
+    Livewire::test('pages::users.show', ['user' => $user])
+        ->call('delete')
+        ->assertRedirect(route('users.index'));
 
     expect(User::find($user->id))->toBeNull();
 });

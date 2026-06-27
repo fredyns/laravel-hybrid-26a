@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -94,15 +93,6 @@ new #[Title('Users')] class extends Component {
         $this->authorize('users.change-password');
 
         $this->dispatch('user-change-password', userId: $userId);
-    }
-
-    public function delete(string $userId): void
-    {
-        $this->authorize('users.delete');
-
-        User::query()->findOrFail($userId)->delete();
-
-        Flux::toast(variant: 'success', text: __('User deleted.'));
     }
 
     #[On('users-updated')]
@@ -217,10 +207,6 @@ new #[Title('Users')] class extends Component {
                                 <flux:button size="sm" variant="ghost" icon="eye" wire:click="viewUser('{{ $user->id }}')" :aria-label="__('View')" />
                             </flux:tooltip>
 
-                            <flux:tooltip :content="__('Open page')">
-                                <flux:button size="sm" variant="ghost" icon="arrow-up-right" :href="route('users.show', $user)" wire:navigate :aria-label="__('Open page')" />
-                            </flux:tooltip>
-
                             @can('users.update')
                                 <flux:tooltip :content="__('Edit')">
                                     <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="edit('{{ $user->id }}')" :aria-label="__('Edit')" />
@@ -230,19 +216,6 @@ new #[Title('Users')] class extends Component {
                             @can('users.change-password')
                                 <flux:tooltip :content="__('Change password')">
                                     <flux:button size="sm" variant="ghost" icon="key" wire:click="changePassword('{{ $user->id }}')" :aria-label="__('Change password')" />
-                                </flux:tooltip>
-                            @endcan
-
-                            @can('users.delete')
-                                <flux:tooltip :content="__('Delete')">
-                                    <flux:button
-                                        size="sm"
-                                        variant="ghost"
-                                        icon="trash"
-                                        wire:click="delete('{{ $user->id }}')"
-                                        wire:confirm="{{ __('Delete this user? This cannot be undone.') }}"
-                                        :aria-label="__('Delete')"
-                                    />
                                 </flux:tooltip>
                             @endcan
                         </div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Flux\Flux;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -27,6 +28,17 @@ new #[Title('User')] class extends Component {
         $this->authorize('users.change-password');
 
         $this->dispatch('user-change-password', userId: $this->user->id);
+    }
+
+    public function delete(): void
+    {
+        $this->authorize('users.delete');
+
+        $this->user->delete();
+
+        Flux::toast(variant: 'success', text: __('User deleted.'));
+
+        $this->redirect(route('users.index'), navigate: true);
     }
 
     #[On('users-updated')]
@@ -56,6 +68,17 @@ new #[Title('User')] class extends Component {
             @can('users.change-password')
                 <flux:button wire:click="changePassword" icon="key">
                     {{ __('Change password') }}
+                </flux:button>
+            @endcan
+
+            @can('users.delete')
+                <flux:button
+                    wire:click="delete"
+                    wire:confirm="{{ __('Delete this user? This cannot be undone.') }}"
+                    variant="danger"
+                    icon="trash"
+                >
+                    {{ __('Delete') }}
                 </flux:button>
             @endcan
         </div>
