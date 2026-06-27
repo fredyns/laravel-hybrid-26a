@@ -21,6 +21,12 @@
                             {{ __('Users') }}
                         </flux:sidebar.item>
                     @endcan
+
+                    @can('rbac.index')
+                        <flux:sidebar.item icon="shield-check" :href="route('roles.index')" :current="request()->routeIs('roles.*')" wire:navigate>
+                            {{ __('Roles') }}
+                        </flux:sidebar.item>
+                    @endcan
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
