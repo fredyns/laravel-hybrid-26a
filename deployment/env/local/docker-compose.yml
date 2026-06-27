@@ -2,6 +2,9 @@ networks:
     livewire26d_net:
         driver: bridge
 
+volumes:
+    livewire26d_node_modules:
+
 services:
     app:
         build:
@@ -11,6 +14,7 @@ services:
         working_dir: /var/www/html
         volumes:
             - '.:/var/www/html'
+            - 'livewire26d_node_modules:/var/www/html/node_modules'
         environment:
             - DB_HOST=${DB_HOST}
             - DB_PORT=${DB_PORT}
@@ -23,16 +27,16 @@ services:
             - livewire26d_net
 
     web:
-      image: 'nginx:alpine'
-      container_name: livewire26d_web
-      ports:
-        - '${APP_PORT:-9700}:80'
-      volumes:
-        - '.:/var/www/html'
-        - './deployment/docker/nginx/conf.d:/etc/nginx/conf.d'
-        - './deployment/docker/nginx/nginx.conf:/etc/nginx/nginx.conf'
-      networks:
-        - livewire26d_net
+        image: 'nginx:alpine'
+        container_name: livewire26d_web
+        ports:
+            - '${APP_PORT:-9700}:80'
+        volumes:
+            - '.:/var/www/html'
+            - './deployment/docker/nginx/conf.d:/etc/nginx/conf.d'
+            - './deployment/docker/nginx/nginx.conf:/etc/nginx/nginx.conf'
+        networks:
+            - livewire26d_net
 
     postgres:
         image: 'postgres:18-alpine'
