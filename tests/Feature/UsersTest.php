@@ -181,6 +181,40 @@ test('the individual show page is forbidden without permission', function () {
     $this->get(route('users.show', $user))->assertForbidden();
 });
 
+test('the show page opens the edit modal via event', function () {
+    $this->actingAs(adminUser());
+
+    $user = User::factory()->create();
+
+    Livewire::test('pages::users.show', ['user' => $user])
+        ->call('edit')
+        ->assertDispatched('user-edit');
+});
+
+test('the show page opens the change password modal via event', function () {
+    $this->actingAs(adminUser());
+
+    $user = User::factory()->create();
+
+    Livewire::test('pages::users.show', ['user' => $user])
+        ->call('changePassword')
+        ->assertDispatched('user-change-password');
+});
+
+test('the show page refreshes the displayed user after an update', function () {
+    $this->actingAs(adminUser());
+
+    $user = User::factory()->create(['name' => 'Stale Name']);
+
+    $component = Livewire::test('pages::users.show', ['user' => $user]);
+
+    $user->update(['name' => 'Fresh Name']);
+
+    $component->call('refreshUser')
+        ->assertSet('user.name', 'Fresh Name')
+        ->assertSee('Fresh Name');
+});
+
 test('a user with only index permission cannot create', function () {
     $this->actingAs(externalUser());
 

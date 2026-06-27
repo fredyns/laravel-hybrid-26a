@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -12,6 +13,26 @@ new #[Title('User')] class extends Component {
         $this->authorize('users.show');
 
         $this->user = $user;
+    }
+
+    public function edit(): void
+    {
+        $this->authorize('users.update');
+
+        $this->dispatch('user-edit', userId: $this->user->id);
+    }
+
+    public function changePassword(): void
+    {
+        $this->authorize('users.change-password');
+
+        $this->dispatch('user-change-password', userId: $this->user->id);
+    }
+
+    #[On('users-updated')]
+    public function refreshUser(): void
+    {
+        $this->user->refresh();
     }
 }; ?>
 
@@ -25,11 +46,19 @@ new #[Title('User')] class extends Component {
             </div>
         </div>
 
-        @can('users.update')
-            <flux:button :href="route('users.index')" wire:navigate variant="primary" icon="pencil-square">
-                {{ __('Manage') }}
-            </flux:button>
-        @endcan
+        <div class="flex items-center gap-2">
+            @can('users.update')
+                <flux:button wire:click="edit" variant="primary" icon="pencil-square">
+                    {{ __('Edit') }}
+                </flux:button>
+            @endcan
+
+            @can('users.change-password')
+                <flux:button wire:click="changePassword" icon="key">
+                    {{ __('Change password') }}
+                </flux:button>
+            @endcan
+        </div>
     </div>
 
     <flux:separator />
@@ -66,4 +95,7 @@ new #[Title('User')] class extends Component {
             <flux:text class="font-medium">{{ $user->updated_at?->format('Y-m-d H:i') }}</flux:text>
         </div>
     </div>
+
+    <livewire:pages::users.form />
+    <livewire:pages::users.change-password />
 </div>
