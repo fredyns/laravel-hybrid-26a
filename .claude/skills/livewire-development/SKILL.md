@@ -10,9 +10,7 @@ metadata:
 
 ## Documentation
 
-Local docs are available at `code-samples/livewire/README.md` — check there first before using `search-docs`. The README is a full table of contents with links to individual topic files covering every directive, attribute, feature, and advanced concept. Use it to locate the right file, then read that file for details.
-
-Use `search-docs` for anything not covered in the local docs, or to cross-reference official patterns.
+Use `search-docs` for detailed Livewire 4 patterns and documentation.
 
 ## Basic Usage
 
