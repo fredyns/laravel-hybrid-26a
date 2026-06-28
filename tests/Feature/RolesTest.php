@@ -33,10 +33,12 @@ test('index can filter roles by guard', function () {
     Role::create(['name' => 'sanctum-only-role', 'guard_name' => 'sanctum']);
 
     Livewire::test('pages::roles.index')
-        ->set('guard', 'sanctum')
+        ->call('filterByGuard', 'sanctum')
         ->assertSee('sanctum-only-role')
-        ->set('guard', 'web')
-        ->assertDontSee('sanctum-only-role');
+        ->call('filterByGuard', 'web')
+        ->assertDontSee('sanctum-only-role')
+        ->call('filterByGuard', '')
+        ->assertSee('sanctum-only-role');
 });
 
 test('a role can be created through the form modal', function () {

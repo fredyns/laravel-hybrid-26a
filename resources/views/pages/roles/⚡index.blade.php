@@ -26,8 +26,10 @@ new #[Title('Roles')] class extends Component {
         $this->resetPage();
     }
 
-    public function updatedGuard(): void
+    public function filterByGuard(string $guard): void
     {
+        $this->guard = $guard;
+
         $this->resetPage();
     }
 
@@ -99,14 +101,29 @@ new #[Title('Roles')] class extends Component {
             clearable
         />
 
-        <flux:spacer />
+        <div class="flex items-center gap-1.5">
+            <flux:button
+                size="sm"
+                :variant="$guard === '' ? 'primary' : 'outline'"
+                class="rounded-full"
+                wire:click="filterByGuard('')"
+            >
+                {{ __('All') }}
+            </flux:button>
 
-        <flux:select class="max-w-[10rem]" wire:model.live="guard">
-            <flux:select.option value="">{{ __('All guards') }}</flux:select.option>
             @foreach ($this->guards() as $guardValue)
-                <flux:select.option value="{{ $guardValue }}">{{ $guardValue }}</flux:select.option>
+                <flux:button
+                    size="sm"
+                    :variant="$guard === $guardValue ? 'primary' : 'outline'"
+                    class="rounded-full"
+                    wire:click="filterByGuard('{{ $guardValue }}')"
+                >
+                    {{ $guardValue }}
+                </flux:button>
             @endforeach
-        </flux:select>
+        </div>
+
+        <flux:spacer />
 
         <flux:select class="max-w-[7rem]" wire:model.live="perPage">
             <flux:select.option value="10">10</flux:select.option>
