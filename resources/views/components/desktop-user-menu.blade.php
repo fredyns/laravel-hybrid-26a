@@ -18,22 +18,34 @@
             </div>
         </div>
         <flux:menu.separator />
-        <flux:menu.radio.group>
-            <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                {{ __('Settings') }}
+
+        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
+            {{ __('Settings') }}
+        </flux:menu.item>
+
+        <flux:menu.separator />
+
+        <form method="POST" action="{{ route('layout-mode.toggle') }}" class="w-full">
+            @csrf
+            <input type="hidden" name="mode" value="header">
+            <flux:menu.item as="button" type="submit" icon="bars-3" class="w-full cursor-pointer">
+                {{ __('Top bar layout') }}
             </flux:menu.item>
-            <form method="POST" action="{{ route('logout') }}" class="w-full">
-                @csrf
-                <flux:menu.item
-                    as="button"
-                    type="submit"
-                    icon="arrow-right-start-on-rectangle"
-                    class="w-full cursor-pointer"
-                    data-test="logout-button"
-                >
-                    {{ __('Log out') }}
-                </flux:menu.item>
-            </form>
-        </flux:menu.radio.group>
+        </form>
+
+        <flux:menu.separator />
+
+        <form method="POST" action="{{ route('logout') }}" class="w-full">
+            @csrf
+            <flux:menu.item
+                as="button"
+                type="submit"
+                icon="arrow-right-start-on-rectangle"
+                class="w-full cursor-pointer"
+                data-test="logout-button"
+            >
+                {{ __('Log out') }}
+            </flux:menu.item>
+        </form>
     </flux:menu>
 </flux:dropdown>
