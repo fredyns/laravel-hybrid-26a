@@ -158,10 +158,11 @@
         </flux:menu>
     </flux:dropdown>
 </flux:header>
+</div>
 
-    {{-- Breadcrumbs --}}
+{{-- Breadcrumbs --}}
 @if (count($crumbs) > 0)
-    <div class="border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800">
+    <div class="[grid-area:header] bg-white dark:bg-zinc-800 mt-12 pt-2">
         <div class="mx-auto max-w-7xl px-6 lg:px-8 py-1.5 opacity-80">
             <flux:breadcrumbs class="text-xs">
                 <flux:breadcrumbs.item :href="route('dashboard')" icon="home" />
@@ -176,7 +177,6 @@
         </div>
     </div>
 @endif
-</div>
 
 {{-- Mobile sidebar for header mode --}}
 <flux:sidebar sticky collapsible="mobile" class="lg:hidden border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
