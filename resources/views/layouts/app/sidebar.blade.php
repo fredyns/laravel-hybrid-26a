@@ -10,6 +10,11 @@
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
+                <div class="px-3 py-2 in-data-flux-sidebar-collapsed-desktop:hidden">
+                    <div class="text-sm text-zinc-400 font-medium leading-none">{{ __('Platform') }}</div>
+                </div>
+                <flux:separator class="hidden in-data-flux-sidebar-collapsed-desktop:block mx-auto my-1" />
+
                 <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                     {{ __('Dashboard') }}
                 </flux:sidebar.item>
