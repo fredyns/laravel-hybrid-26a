@@ -1,6 +1,7 @@
 
 {{-- ==================== HEADER MODE ==================== --}}
-<flux:header container sticky class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+<div class="[grid-area:header] sticky top-0 z-10">
+<flux:header container class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 ![grid-area:unset]">
     <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
     <x-app-logo href="{{ route('dashboard') }}" wire:navigate class="max-lg:hidden" />
@@ -158,9 +159,10 @@
     </flux:dropdown>
 </flux:header>
 
+    {{-- Breadcrumbs --}}
 @if (count($crumbs) > 0)
     <div class="border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800">
-        <div class="mx-auto max-w-7xl px-6 py-1.5 opacity-80">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8 py-1.5 opacity-80">
             <flux:breadcrumbs class="text-xs">
                 <flux:breadcrumbs.item :href="route('dashboard')" icon="home" />
                 @foreach ($crumbs as $i => $crumb)
@@ -174,6 +176,7 @@
         </div>
     </div>
 @endif
+</div>
 
 {{-- Mobile sidebar for header mode --}}
 <flux:sidebar sticky collapsible="mobile" class="lg:hidden border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
