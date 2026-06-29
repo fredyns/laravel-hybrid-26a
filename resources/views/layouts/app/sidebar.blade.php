@@ -10,23 +10,21 @@
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
+                <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+                    {{ __('Dashboard') }}
+                </flux:sidebar.item>
+
+                @can('users.index')
+                    <flux:sidebar.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
+                        {{ __('Users') }}
                     </flux:sidebar.item>
+                @endcan
 
-                    @can('users.index')
-                        <flux:sidebar.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
-                            {{ __('Users') }}
-                        </flux:sidebar.item>
-                    @endcan
-
-                    @can('rbac.index')
-                        <flux:sidebar.item icon="shield-check" :href="route('roles.index')" :current="request()->routeIs('roles.*')" wire:navigate>
-                            {{ __('Roles') }}
-                        </flux:sidebar.item>
-                    @endcan
-                </flux:sidebar.group>
+                @can('rbac.index')
+                    <flux:sidebar.item icon="shield-check" :href="route('roles.index')" :current="request()->routeIs('roles.*')" wire:navigate>
+                        {{ __('Roles') }}
+                    </flux:sidebar.item>
+                @endcan
             </flux:sidebar.nav>
 
             <flux:spacer />
