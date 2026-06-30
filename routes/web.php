@@ -28,6 +28,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('roles/{role}', 'pages::roles.show')
         ->middleware('can:rbac.show')
         ->name('roles.show');
+
+    Route::livewire('notifications', 'pages::notifications.index')
+        ->name('notifications.index');
 });
 
 require __DIR__.'/settings.php';

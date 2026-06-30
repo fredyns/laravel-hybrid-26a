@@ -23,6 +23,13 @@ services:
             - DB_PASSWORD=${DB_PASSWORD}
             - REDIS_HOST=${REDIS_HOST}
             - REDIS_PORT=${REDIS_PORT}
+            - BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-reverb}
+            - REVERB_APP_ID=${REVERB_APP_ID}
+            - REVERB_APP_KEY=${REVERB_APP_KEY}
+            - REVERB_APP_SECRET=${REVERB_APP_SECRET}
+            - REVERB_HOST=reverb
+            - REVERB_PORT=8080
+            - REVERB_SCHEME=http
         networks:
             - livewire26d_net
 
@@ -52,7 +59,7 @@ services:
         networks:
             - livewire26d_net
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+            test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME}" ]
             retries: 3
             timeout: 5s
 
@@ -66,7 +73,7 @@ services:
         networks:
             - livewire26d_net
         healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
+            test: [ "CMD", "redis-cli", "ping" ]
             retries: 3
             timeout: 5s
 
@@ -99,7 +106,7 @@ services:
             - livewire26d_net
         command: server /data --console-address ":9001"
         healthcheck:
-            test: ["CMD", "mc", "ready", "local"]
+            test: [ "CMD", "mc", "ready", "local" ]
             retries: 3
             timeout: 5s
 
@@ -114,6 +121,8 @@ services:
         ports:
             - '${REVERB_PORT:-8080}:8080'
         environment:
+            - APP_KEY=${APP_KEY}
+            - BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-reverb}
             - DB_HOST=${DB_HOST}
             - DB_PORT=${DB_PORT}
             - DB_DATABASE=${DB_DATABASE}
@@ -121,7 +130,46 @@ services:
             - DB_PASSWORD=${DB_PASSWORD}
             - REDIS_HOST=${REDIS_HOST}
             - REDIS_PORT=${REDIS_PORT}
+            - REVERB_APP_ID=${REVERB_APP_ID}
+            - REVERB_APP_KEY=${REVERB_APP_KEY}
+            - REVERB_APP_SECRET=${REVERB_APP_SECRET}
+            - REVERB_HOST=0.0.0.0
+            - REVERB_PORT=8080
+        depends_on:
+            - postgres
+            - redis
         networks:
             - livewire26d_net
-        command: ['php', 'artisan', 'reverb:start', '--host=0.0.0.0', '--port=8080']
+        command: [ 'php', 'artisan', 'reverb:start', '--host=0.0.0.0', '--port=8080', '--debug' ]
+
+    queue:
+        build:
+            context: ./deployment/docker/php
+            dockerfile: Dockerfile
+        container_name: livewire26d_queue
+        working_dir: /var/www/html
+        volumes:
+            - '.:/var/www/html'
+        environment:
+            - APP_KEY=${APP_KEY}
+            - BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-reverb}
+            - DB_HOST=${DB_HOST}
+            - DB_PORT=${DB_PORT}
+            - DB_DATABASE=${DB_DATABASE}
+            - DB_USERNAME=${DB_USERNAME}
+            - DB_PASSWORD=${DB_PASSWORD}
+            - REDIS_HOST=${REDIS_HOST}
+            - REDIS_PORT=${REDIS_PORT}
+            - REVERB_APP_ID=${REVERB_APP_ID}
+            - REVERB_APP_KEY=${REVERB_APP_KEY}
+            - REVERB_APP_SECRET=${REVERB_APP_SECRET}
+            - REVERB_HOST=reverb
+            - REVERB_PORT=8080
+        depends_on:
+            - postgres
+            - redis
+            - reverb
+        networks:
+            - livewire26d_net
+        command: [ 'php', 'artisan', 'queue:work', '--tries=3', '--timeout=90' ]
 

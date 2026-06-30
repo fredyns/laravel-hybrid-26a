@@ -10,13 +10,14 @@ abstract class TestCase extends BaseTestCase
     /**
      * Force the in-memory SQLite test database before the application boots.
      *
-     * The Docker container injects real DB_* environment variables (for the
-     * Postgres runtime) which take precedence over phpunit.xml's <env> values,
-     * so they must be overridden here via putenv() before config is loaded.
+     * The Docker container injects real DB_* and BROADCAST_CONNECTION
+     * environment variables (for the Postgres and Reverb runtimes) which take
+     * precedence over phpunit.xml's <env> values, so they must be overridden
+     * here via putenv() before config is loaded.
      */
     protected function setUp(): void
     {
-        foreach (['DB_CONNECTION' => 'sqlite', 'DB_DATABASE' => ':memory:'] as $key => $value) {
+        foreach (['DB_CONNECTION' => 'sqlite', 'DB_DATABASE' => ':memory:', 'BROADCAST_CONNECTION' => 'null'] as $key => $value) {
             putenv("{$key}={$value}");
             $_ENV[$key] = $value;
             $_SERVER[$key] = $value;

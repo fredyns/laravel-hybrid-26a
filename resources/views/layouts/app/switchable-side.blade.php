@@ -26,6 +26,10 @@
                 {{ __('Roles') }}
             </flux:sidebar.item>
         @endcan
+
+        <flux:sidebar.item icon="bell" :href="route('notifications.index')" :current="request()->routeIs('notifications.*')" wire:navigate>
+            {{ __('Notifications') }}
+        </flux:sidebar.item>
     </flux:sidebar.nav>
 
     <flux:spacer />
@@ -75,7 +79,7 @@
             </flux:menu>
         </flux:dropdown>
 
-        <flux:button variant="subtle" icon="bell" size="sm" square aria-label="{{ __('Notifications') }}" />
+        <livewire:notification-bell />
 
         <flux:separator vertical variant="subtle" class="mx-1 lg:hidden my-2" />
 
