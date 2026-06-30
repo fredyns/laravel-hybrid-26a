@@ -1,7 +1,7 @@
 
 {{-- ==================== HEADER MODE ==================== --}}
 <div class="[grid-area:header] sticky top-0 z-10">
-<flux:header container class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 ![grid-area:unset]">
+<flux:header container class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 ![grid-area:unset]">
     <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
     <x-app-logo href="{{ route('dashboard') }}" wire:navigate class="max-lg:hidden" />

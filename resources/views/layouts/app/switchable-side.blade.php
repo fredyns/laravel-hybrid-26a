@@ -1,13 +1,13 @@
 
 {{-- ==================== SIDEBAR MODE ==================== --}}
-<flux:sidebar sticky collapsible class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+<flux:sidebar sticky collapsible class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
     <flux:sidebar.header>
         <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
     </flux:sidebar.header>
 
     <flux:sidebar.nav>
         <div class="px-3 py-2 in-data-flux-sidebar-collapsed-desktop:hidden">
-            <div class="text-sm text-zinc-400 font-medium leading-none">{{ __('Platform') }}</div>
+            <div class="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">{{ __('Platform') }}</div>
         </div>
         <flux:separator class="hidden in-data-flux-sidebar-collapsed-desktop:block mx-auto my-1" />
 
@@ -47,7 +47,7 @@
     <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
 </flux:sidebar>
 
-<flux:header class="border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+<flux:header class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
     <flux:sidebar.toggle icon="bars-2" inset="left" />
 
     <flux:breadcrumbs>
