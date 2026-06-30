@@ -1,7 +1,7 @@
 
 {{-- ==================== HEADER MODE ==================== --}}
 <div class="[grid-area:header] sticky top-0 z-10">
-<flux:header container class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 ![grid-area:unset]">
+<flux:header container class="border-b border-zinc-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 dark:border-zinc-800 dark:from-zinc-900 dark:via-indigo-950/30 dark:to-zinc-900 ![grid-area:unset]">
     <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
     <x-app-logo href="{{ route('dashboard') }}" wire:navigate class="max-lg:hidden" />
@@ -183,7 +183,7 @@
 @endif
 
 {{-- Mobile sidebar for header mode --}}
-<flux:sidebar sticky collapsible="mobile" class="lg:hidden border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+<flux:sidebar sticky collapsible="mobile" class="lg:hidden border-e border-zinc-200 bg-gradient-to-b from-blue-50 via-indigo-50 to-violet-50 dark:border-zinc-800 dark:from-zinc-900 dark:via-indigo-950/30 dark:to-zinc-900">
     <flux:sidebar.header>
         <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
         <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
