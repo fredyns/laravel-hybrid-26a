@@ -44,7 +44,10 @@ new class extends Component
     <flux:button variant="subtle" size="sm" square aria-label="{{ __('Notifications') }}" class="relative">
         <flux:icon.bell variant="mini" />
         @if ($this->unreadCount > 0)
-            <flux:badge size="sm" color="red" class="absolute -top-1 -end-1">{{ $this->unreadCount }}</flux:badge>
+            <span class="absolute -top-0.5 -end-0.5 flex size-2.5">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75"></span>
+                <span class="relative inline-flex size-2.5 rounded-full bg-indigo-500 ring-2 ring-white dark:ring-zinc-900"></span>
+            </span>
         @endif
     </flux:button>
 
