@@ -5,12 +5,16 @@
 /public/hot
 /public/storage
 /storage/*.key
+/storage/docker
 /storage/pail
 /vendor
 .env.backup
 .env.production
 .phpactor.json
 .phpunit.result.cache
+/LiveWire26d
+/LiveWire26d-journal
+/nul
 Homestead.json
 Homestead.yaml
 npm-debug.log
