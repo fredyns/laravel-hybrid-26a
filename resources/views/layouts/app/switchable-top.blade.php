@@ -11,25 +11,29 @@
     </div>
 
     <flux:navbar class="-mb-px max-lg:hidden">
-        <flux:navbar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-            {{ __('Dashboard') }}
-        </flux:navbar.item>
+        @canany(['users.index', 'rbac.index'])
+            <flux:dropdown>
+                <flux:navbar.item
+                    icon="lock-closed"
+                    icon:trailing="chevron-down"
+                    :current="request()->routeIs('users.*') || request()->routeIs('roles.*')"
+                >Auth</flux:navbar.item>
 
-        @can('users.index')
-            <flux:navbar.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
-                {{ __('Users') }}
-            </flux:navbar.item>
-        @endcan
+                <flux:menu>
+                    @can('users.index')
+                        <flux:menu.item icon="users" :href="route('users.index')" wire:navigate>
+                            {{ __('Users') }}
+                        </flux:menu.item>
+                    @endcan
 
-        @can('rbac.index')
-            <flux:navbar.item icon="shield-check" :href="route('roles.index')" :current="request()->routeIs('roles.*')" wire:navigate>
-                {{ __('Roles') }}
-            </flux:navbar.item>
-        @endcan
-
-        <flux:navbar.item icon="bell" :href="route('notifications.index')" :current="request()->routeIs('notifications.*')" wire:navigate>
-            {{ __('Notifications') }}
-        </flux:navbar.item>
+                    @can('rbac.index')
+                        <flux:menu.item icon="shield-check" :href="route('roles.index')" wire:navigate>
+                            {{ __('Roles') }}
+                        </flux:menu.item>
+                    @endcan
+                </flux:menu>
+            </flux:dropdown>
+        @endcanany
     </flux:navbar>
 
     <flux:spacer />
