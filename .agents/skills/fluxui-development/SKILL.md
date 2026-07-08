@@ -8,62 +8,48 @@ metadata:
 
 # Flux UI Development
 
-## Local Code Samples (Primary Reference)
+## Documentation
 
-This project includes comprehensive Flux UI code samples at `code-samples/flux-ui/`. **Always read the relevant sample file before using a component.** These samples contain props, variants, slots, events, CSS references, and real-world usage patterns.
-
-### How to use
-
-When working with a Flux component, read its sample file first:
-- **Component**: `code-samples/flux-ui/components/{component-name}.md` (e.g., `button.md`, `modal.md`, `table.md`, `select.md`)
-- **Layout**: `code-samples/flux-ui/layouts/{layout-name}.md` (e.g., `sidebar.md`, `header.md`)
-- **Guide**: `code-samples/flux-ui/guides/{topic}.md` (e.g., `patterns.md`, `theming.md`, `customization.md`, `dark-mode.md`)
-
-### Available Components (Pro Edition)
-
-accordion, autocomplete, avatar, badge, brand, breadcrumbs, button, calendar, callout, card, carousel, chart, checkbox, color-picker, command, composer, context, date-picker, dropdown, editor, field, file-upload, heading, icon, input, kanban, modal, navbar, otp-input, pagination, pillbox, popover, profile, progress, radio, select, separator, skeleton, slider, switch, table, tabs, text, textarea, time-picker, timeline, toast, tooltip
-
-### Available Layouts
-
-header, sidebar
-
-### Available Guides
-
-customization, dark-mode, patterns, theming
-
-## Additional Documentation
-
-Use `search-docs` for Flux UI patterns not covered by the local code samples.
+Use `search-docs` for detailed Flux UI patterns and documentation.
 
 ## Basic Usage
 
 This project uses the Pro version of Flux UI, which includes all free and Pro components and variants.
 
-Flux UI is a component library for Livewire built with Tailwind CSS. Use Flux UI components when available. Fall back to standard Blade components when no Flux component exists for your needs.
+Flux UI is a component library for Livewire built with Tailwind CSS. It provides components that are easy to use and customize.
+
+Use Flux UI components when available. Fall back to standard Blade components when no Flux component exists for your needs.
+
+<!-- Basic Button -->
+```blade
+<flux:button variant="primary">Click me</flux:button>
+```
+
+## Available Components (Pro Edition)
+
+Available: accordion, autocomplete, avatar, badge, brand, breadcrumbs, button, calendar, callout, card, chart, checkbox, color-picker, command, composer, context, date-picker, dropdown, editor, field, file-upload, heading, icon, input, kanban, modal, navbar, otp-input, pagination, pillbox, popover, profile, progress, radio, select, separator, skeleton, slider, switch, table, tabs, text, textarea, time-picker, timeline, toast, tooltip
 
 ## Icons
 
 Flux includes [Heroicons](https://heroicons.com/) as its default icon set. Search for exact icon names on the Heroicons site - do not guess or invent icon names.
 
+<!-- Icon Button -->
 ```blade
 <flux:button icon="arrow-down-tray">Export</flux:button>
 ```
 
-For icons not available in Heroicons, use [Lucide](https://lucide.dev/). Import with:
+For icons not available in Heroicons, use [Lucide](https://lucide.dev/). Import the icons you need with the Artisan command:
 
 ```bash
 php artisan flux:icon crown grip-vertical github
 ```
 
-## Key Patterns (Quick Reference)
+## Common Patterns
 
-### Shorthand props
+### Form Fields
 
+<!-- Form Field -->
 ```blade
-<!-- Shorthand (preferred for simple cases) -->
-<flux:input type="email" wire:model="email" label="Email" />
-
-<!-- Longform (when customization is needed) -->
 <flux:field>
     <flux:label>Email</flux:label>
     <flux:input type="email" wire:model="email" />
@@ -71,40 +57,17 @@ php artisan flux:icon crown grip-vertical github
 </flux:field>
 ```
 
-### Modals — named triggers vs wire:model
+### Tables
 
+<!-- Table -->
 ```blade
-<!-- Named trigger approach -->
-<flux:modal.trigger name="edit-profile">
-    <flux:button>Edit</flux:button>
-</flux:modal.trigger>
-<flux:modal name="edit-profile" class="md:w-96">...</flux:modal>
-
-<!-- Livewire data-binding approach (use .self modifier) -->
-<flux:modal wire:model.self="showModal">...</flux:modal>
-
-<!-- Programmatic control from Livewire -->
-$this->modal('confirm')->show();
-$this->modal('confirm')->close();
-Flux::modals()->close();
-```
-
-### Tables with pagination
-
-```blade
-<flux:table :paginate="$this->items">
+<flux:table>
     <flux:table.columns>
-        <flux:table.column>Name</flux:table.column>
-        <flux:table.column sortable :sorted="$sortBy === 'date'" :direction="$sortDirection" wire:click="sort('date')">Date</flux:table.column>
+        <flux:table.cell>Column Name</flux:table.cell>
     </flux:table.columns>
-    <flux:table.rows>
-        @foreach ($this->items as $item)
-            <flux:table.row :key="$item->id">
-                <flux:table.cell variant="strong">{{ $item->name }}</flux:table.cell>
-                <flux:table.cell>{{ $item->date }}</flux:table.cell>
-            </flux:table.row>
-        @endforeach
-    </flux:table.rows>
+    <flux:table.row>
+        <flux:table.cell>Value</flux:table.cell>
+    </flux:table.row>
 </flux:table>
 ```
 
@@ -116,8 +79,6 @@ Flux::modals()->close();
 
 ## Common Pitfalls
 
-- Not reading the local code sample before using a component — always check `code-samples/flux-ui/components/` first
 - Not checking if a Flux component exists before creating custom implementations
-- Using `wire:model` without `.self` modifier on modals (nested elements can dispatch interfering input events)
-- Forgetting that class conflicts with Flux internals need Tailwind's `!` modifier (e.g., `bg-zinc-800!`)
+- Forgetting to use the `search-docs` tool for component-specific documentation
 - Not following existing project patterns for Flux usage
