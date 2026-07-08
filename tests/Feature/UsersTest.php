@@ -1,6 +1,11 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Livewire\Pages\Users\ChangePassword;
+use App\Livewire\Pages\Users\Form;
+use App\Livewire\Pages\Users\Index;
+use App\Livewire\Pages\Users\Show;
+use App\Livewire\Pages\Users\ShowModal;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
@@ -44,7 +49,7 @@ test('index can search users by name and email', function () {
     $needle = User::factory()->create(['name' => 'Zentavia Marwick', 'email' => 'zentavia@example.test']);
     $other = User::factory()->create(['name' => 'Bartholomew Quince', 'email' => 'bartholomew@example.test']);
 
-    Livewire::test('pages::users.index')
+    Livewire::test(Index::class)
         ->set('search', 'Zentavia')
         ->assertSee('Zentavia Marwick')
         ->assertDontSee('Bartholomew Quince')
@@ -58,7 +63,7 @@ test('index only renders selected columns', function () {
 
     $user = User::factory()->create(['name' => 'Columnar Tester', 'email' => 'columnar@example.test']);
 
-    Livewire::test('pages::users.index')
+    Livewire::test(Index::class)
         ->set('search', 'Columnar')
         ->set('visibleColumns', ['name'])
         ->assertSee('Columnar Tester')
@@ -70,7 +75,7 @@ test('index only renders selected columns', function () {
 test('a user can be created through the form modal', function () {
     $this->actingAs(adminUser());
 
-    Livewire::test('pages::users.form')
+    Livewire::test(Form::class)
         ->call('createUser')
         ->set('name', 'Created Person')
         ->set('email', 'created@example.test')
@@ -86,7 +91,7 @@ test('a user can be created through the form modal', function () {
 test('creating a user validates input', function () {
     $this->actingAs(adminUser());
 
-    Livewire::test('pages::users.form')
+    Livewire::test(Form::class)
         ->call('createUser')
         ->set('name', '')
         ->set('email', 'not-an-email')
@@ -101,7 +106,7 @@ test('an existing user can be edited through the form modal', function () {
 
     $user = User::factory()->create(['name' => 'Before Name']);
 
-    Livewire::test('pages::users.form')
+    Livewire::test(Form::class)
         ->call('editUser', userId: $user->id)
         ->assertSet('name', 'Before Name')
         ->set('name', 'After Name')
@@ -118,7 +123,7 @@ test('a user can be deleted from the show page', function () {
 
     $user = User::factory()->create();
 
-    Livewire::test('pages::users.show', ['user' => $user])
+    Livewire::test(Show::class, ['user' => $user])
         ->call('delete')
         ->assertRedirect(route('users.index'));
 
@@ -130,7 +135,7 @@ test('a password can be changed through the modal', function () {
 
     $user = User::factory()->create();
 
-    Livewire::test('pages::users.change-password')
+    Livewire::test(ChangePassword::class)
         ->call('open', userId: $user->id)
         ->set('password', 'new-password-123')
         ->set('password_confirmation', 'new-password-123')
@@ -145,7 +150,7 @@ test('changing a password requires confirmation', function () {
 
     $user = User::factory()->create();
 
-    Livewire::test('pages::users.change-password')
+    Livewire::test(ChangePassword::class)
         ->call('open', userId: $user->id)
         ->set('password', 'new-password-123')
         ->set('password_confirmation', 'mismatch')
@@ -158,7 +163,7 @@ test('the show modal loads the selected user', function () {
 
     $user = User::factory()->create(['name' => 'Modal Subject']);
 
-    Livewire::test('pages::users.show-modal')
+    Livewire::test(ShowModal::class)
         ->call('showUser', userId: $user->id)
         ->assertSet('user.id', $user->id)
         ->assertSee('Modal Subject');
@@ -187,7 +192,7 @@ test('the show page opens the edit modal via event', function () {
 
     $user = User::factory()->create();
 
-    Livewire::test('pages::users.show', ['user' => $user])
+    Livewire::test(Show::class, ['user' => $user])
         ->call('edit')
         ->assertDispatched('user-edit');
 });
@@ -197,7 +202,7 @@ test('the show page opens the change password modal via event', function () {
 
     $user = User::factory()->create();
 
-    Livewire::test('pages::users.show', ['user' => $user])
+    Livewire::test(Show::class, ['user' => $user])
         ->call('changePassword')
         ->assertDispatched('user-change-password');
 });
@@ -207,7 +212,7 @@ test('the show page refreshes the displayed user after an update', function () {
 
     $user = User::factory()->create(['name' => 'Stale Name']);
 
-    $component = Livewire::test('pages::users.show', ['user' => $user]);
+    $component = Livewire::test(Show::class, ['user' => $user]);
 
     $user->update(['name' => 'Fresh Name']);
 
@@ -219,7 +224,7 @@ test('the show page refreshes the displayed user after an update', function () {
 test('a user with only index permission cannot create', function () {
     $this->actingAs(externalUser());
 
-    Livewire::test('pages::users.form')
+    Livewire::test(Form::class)
         ->call('createUser')
         ->assertForbidden();
 });

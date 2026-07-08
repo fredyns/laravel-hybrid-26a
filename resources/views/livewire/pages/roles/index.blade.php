@@ -116,5 +116,5 @@
         </flux:table.rows>
     </flux:table>
 
-    <livewire:pages::roles.form />
+    <livewire:pages.roles.form />
 </div>

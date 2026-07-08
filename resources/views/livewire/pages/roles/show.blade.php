@@ -85,5 +85,5 @@
         @endforelse
     </div>
 
-    <livewire:pages::roles.form />
+    <livewire:pages.roles.form />
 </div>

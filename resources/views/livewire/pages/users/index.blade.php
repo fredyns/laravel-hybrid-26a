@@ -120,7 +120,7 @@
         </flux:table.rows>
     </flux:table>
 
-    <livewire:pages::users.form />
-    <livewire:pages::users.show-modal />
-    <livewire:pages::users.change-password />
+    <livewire:pages.users.form />
+    <livewire:pages.users.show-modal />
+    <livewire:pages.users.change-password />
 </div>

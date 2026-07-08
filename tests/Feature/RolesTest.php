@@ -1,5 +1,8 @@
 <?php
 
+use App\Livewire\Pages\Roles\Form;
+use App\Livewire\Pages\Roles\Index;
+use App\Livewire\Pages\Roles\Show;
 use App\Models\RBAC\Role;
 use App\Models\User;
 use Livewire\Livewire;
@@ -21,7 +24,7 @@ test('index can search roles by name', function () {
 
     Role::create(['name' => 'zentavia-moderator', 'guard_name' => 'web']);
 
-    Livewire::test('pages::roles.index')
+    Livewire::test(Index::class)
         ->set('search', 'zentavia')
         ->assertSee('zentavia-moderator')
         ->assertDontSee('super-admin');
@@ -32,7 +35,7 @@ test('index can filter roles by guard', function () {
 
     Role::create(['name' => 'sanctum-only-role', 'guard_name' => 'sanctum']);
 
-    Livewire::test('pages::roles.index')
+    Livewire::test(Index::class)
         ->call('filterByGuard', 'sanctum')
         ->assertSee('sanctum-only-role')
         ->call('filterByGuard', 'web')
@@ -44,7 +47,7 @@ test('index can filter roles by guard', function () {
 test('a role can be created through the form modal', function () {
     $this->actingAs(adminUser());
 
-    Livewire::test('pages::roles.form')
+    Livewire::test(Form::class)
         ->call('createRole')
         ->set('name', 'editor')
         ->set('guard', 'web')
@@ -64,7 +67,7 @@ test('creating a role validates the name', function () {
 
     Role::create(['name' => 'duplicate', 'guard_name' => 'web']);
 
-    Livewire::test('pages::roles.form')
+    Livewire::test(Form::class)
         ->call('createRole')
         ->set('name', 'duplicate')
         ->set('guard', 'web')
@@ -77,7 +80,7 @@ test('an existing custom role can be edited through the form modal', function ()
 
     $role = Role::create(['name' => 'before-name', 'guard_name' => 'web']);
 
-    Livewire::test('pages::roles.form')
+    Livewire::test(Form::class)
         ->call('editRole', roleId: $role->id)
         ->assertSet('name', 'before-name')
         ->assertSet('protected', false)
@@ -95,7 +98,7 @@ test('a protected role keeps its name when edited', function () {
 
     $role = Role::where('name', 'internal')->where('guard_name', 'web')->firstOrFail();
 
-    Livewire::test('pages::roles.form')
+    Livewire::test(Form::class)
         ->call('editRole', roleId: $role->id)
         ->assertSet('protected', true)
         ->set('name', 'tampered')
@@ -112,7 +115,7 @@ test('the super-admin role must keep at least one permission', function () {
 
     $role = Role::where('name', 'super-admin')->where('guard_name', 'web')->firstOrFail();
 
-    Livewire::test('pages::roles.form')
+    Livewire::test(Form::class)
         ->call('editRole', roleId: $role->id)
         ->set('selectedPermissions', [])
         ->call('save')
@@ -144,7 +147,7 @@ test('a custom role can be deleted from the show page', function () {
 
     $role = Role::create(['name' => 'disposable', 'guard_name' => 'web']);
 
-    Livewire::test('pages::roles.show', ['role' => $role])
+    Livewire::test(Show::class, ['role' => $role])
         ->call('delete')
         ->assertRedirect(route('roles.index'));
 
@@ -156,7 +159,7 @@ test('a protected role cannot be deleted', function () {
 
     $role = Role::where('name', 'internal')->where('guard_name', 'web')->firstOrFail();
 
-    Livewire::test('pages::roles.show', ['role' => $role])
+    Livewire::test(Show::class, ['role' => $role])
         ->call('delete')
         ->assertNoRedirect();
 
@@ -169,7 +172,7 @@ test('a role with assigned users cannot be deleted', function () {
     $role = Role::create(['name' => 'staffed', 'guard_name' => 'web']);
     User::factory()->create()->assignRole($role);
 
-    Livewire::test('pages::roles.show', ['role' => $role])
+    Livewire::test(Show::class, ['role' => $role])
         ->call('delete')
         ->assertNoRedirect();
 
@@ -181,7 +184,7 @@ test('the show page opens the edit modal via event', function () {
 
     $role = Role::create(['name' => 'eventful', 'guard_name' => 'web']);
 
-    Livewire::test('pages::roles.show', ['role' => $role])
+    Livewire::test(Show::class, ['role' => $role])
         ->call('edit')
         ->assertDispatched('role-edit');
 });
@@ -189,7 +192,7 @@ test('the show page opens the edit modal via event', function () {
 test('a user without rbac permission cannot create a role', function () {
     $this->actingAs(externalUser());
 
-    Livewire::test('pages::roles.form')
+    Livewire::test(Form::class)
         ->call('createRole')
         ->assertForbidden();
 });

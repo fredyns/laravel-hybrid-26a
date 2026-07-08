@@ -40,7 +40,7 @@
         </form>
 
         @if ($this->showDeleteUser)
-            <livewire:pages::settings.delete-user-form />
+            <livewire:pages.settings.delete-user-form />
         @endif
     </x-pages::settings.layout>
 </section>

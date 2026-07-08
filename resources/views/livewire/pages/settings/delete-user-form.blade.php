@@ -10,5 +10,5 @@
         </flux:button>
     </flux:modal.trigger>
 
-    <livewire:pages::settings.delete-user-modal />
+    <livewire:pages.settings.delete-user-modal />
 </section>

@@ -69,6 +69,6 @@
         </div>
     </div>
 
-    <livewire:pages::users.form />
-    <livewire:pages::users.change-password />
+    <livewire:pages.users.form />
+    <livewire:pages.users.change-password />
 </div>
