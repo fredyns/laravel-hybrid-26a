@@ -1,6 +1,9 @@
 <?php
 
+use App\Enums\UserRole;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /*
@@ -44,7 +47,19 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function apiAdminUser(): User
 {
-    // ..
+    $user = User::factory()->create();
+    $user->addRoleNames([UserRole::SUPER_ADMIN]);
+
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    return $user;
+}
+
+function apiPlainUser(): User
+{
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    return User::factory()->create();
 }

@@ -1,26 +1,7 @@
 <?php
 
-use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\PermissionRegistrar;
-
-function apiAdminUser(): User
-{
-    $user = User::factory()->create();
-    $user->addRoleNames([UserRole::SUPER_ADMIN]);
-
-    app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-    return $user;
-}
-
-function apiPlainUser(): User
-{
-    app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-    return User::factory()->create();
-}
 
 test('guests receive 401 for every users endpoint', function () {
     $user = User::factory()->create();
