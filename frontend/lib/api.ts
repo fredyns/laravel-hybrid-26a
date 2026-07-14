@@ -31,6 +31,12 @@ export class ApiError extends Error {
 /** Endpoints whose 401 responses must not trigger the global session reset. */
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/logout'];
 
+/**
+ * Served same-origin by Laravel, so a relative /api is the default;
+ * VITE_API_URL overrides it for standalone dev servers.
+ */
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers({
     Accept: 'application/json',
@@ -42,7 +48,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, { ...options, headers });
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
   const payload: unknown = response.status === 204 ? null : await response.json().catch(() => null);
 
   if (!response.ok) {

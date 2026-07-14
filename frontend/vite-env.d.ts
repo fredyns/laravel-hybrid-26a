@@ -1,7 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_API_URL: string;
+  /** Optional API base override; defaults to same-origin /api. */
+  readonly VITE_API_URL?: string;
 }
 
 interface ImportMeta {

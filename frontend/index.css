@@ -1,4 +1,6 @@
-@import "tailwindcss";
+/* Scope class detection to the SPA sources only — the blade assets have
+   their own Tailwind build in resources/css/app.css. */
+@import "tailwindcss" source("../frontend");
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
