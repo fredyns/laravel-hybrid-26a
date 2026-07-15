@@ -1,11 +1,13 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "fredyns/laravel-livewire-26d",
+    "name": "fredyns/laravel-hybrid-26a",
     "type": "project",
-    "description": "Personal Laravel starter kit with Livewire.",
+    "description": "Personal Laravel starter kit with Livewire and React frontend.",
     "keywords": [
         "laravel",
-        "framework"
+        "livewire",
+        "react",
+        "starter-kit"
     ],
     "license": "MIT",
     "require": {

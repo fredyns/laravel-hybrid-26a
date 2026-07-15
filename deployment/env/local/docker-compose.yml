@@ -1,20 +1,20 @@
 networks:
-    livewire26d_net:
+    hybrid26a_net:
         driver: bridge
 
 volumes:
-    livewire26d_node_modules:
+    hybrid26a_node_modules:
 
 services:
     app:
         build:
             context: ./deployment/docker/php
             dockerfile: Dockerfile
-        container_name: livewire26d_app
+        container_name: hybrid26a_app
         working_dir: /var/www/html
         volumes:
             - '.:/var/www/html'
-            - 'livewire26d_node_modules:/var/www/html/node_modules'
+            - 'hybrid26a_node_modules:/var/www/html/node_modules'
         environment:
             - DB_HOST=${DB_HOST}
             - DB_PORT=${DB_PORT}
@@ -28,28 +28,28 @@ services:
             - REVERB_APP_KEY=${REVERB_APP_KEY}
             - REVERB_APP_SECRET=${REVERB_APP_SECRET}
             - REVERB_HOST=reverb
-            - REVERB_PORT=8080
+            - REVERB_PORT=${REVERB_PORT}
             - REVERB_SCHEME=http
         networks:
-            - livewire26d_net
+            - hybrid26a_net
 
     web:
         image: 'nginx:alpine'
-        container_name: livewire26d_web
+        container_name: hybrid26a_web
         ports:
-            - '${APP_PORT:-9700}:80'
+            - '${APP_PORT}:80'
         volumes:
             - '.:/var/www/html'
             - './deployment/docker/nginx/conf.d:/etc/nginx/conf.d'
             - './deployment/docker/nginx/nginx.conf:/etc/nginx/nginx.conf'
         networks:
-            - livewire26d_net
+            - hybrid26a_net
 
     postgres:
         image: 'postgres:18-alpine'
-        container_name: livewire26d_postgres
+        container_name: hybrid26a_postgres
         ports:
-            - '${DB_PORT:-5432}:5432'
+            - '${DB_PORT_X}:5432'
         environment:
             POSTGRES_DB: '${DB_DATABASE}'
             POSTGRES_USER: '${DB_USERNAME}'
@@ -57,56 +57,56 @@ services:
         volumes:
             - './storage/docker/postgres:/var/lib/postgresql'
         networks:
-            - livewire26d_net
+            - hybrid26a_net
         healthcheck:
-            test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME}" ]
+            test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
             retries: 3
             timeout: 5s
 
     redis:
         image: 'redis:7-alpine'
-        container_name: livewire26d_redis
+        container_name: hybrid26a_redis
         ports:
-            - '${REDIS_PORT:-6379}:6379'
+            - '${REDIS_PORT_X}:6379'
         volumes:
             - './storage/docker/redis:/data'
         networks:
-            - livewire26d_net
+            - hybrid26a_net
         healthcheck:
-            test: [ "CMD", "redis-cli", "ping" ]
+            test: ["CMD", "redis-cli", "ping"]
             retries: 3
             timeout: 5s
 
     mailpit:
         image: 'axllent/mailpit:latest'
-        container_name: livewire26d_mailpit
+        container_name: hybrid26a_mailpit
         ports:
-            - '${MAILPIT_SMTP_PORT:-1025}:1025'
-            - '${MAILPIT_UI_PORT:-9725}:8025'
+            - '${MAILPIT_SMTP_PORT_EXPOSED}:1025'
+            - '${MAILPIT_UI_PORT}:8025'
         environment:
             MP_MAX_MESSAGES: 5000
             MP_DATA_FILE: /data/mailpit.db
         volumes:
             - './storage/docker/mailpit:/data'
         networks:
-            - livewire26d_net
+            - hybrid26a_net
 
     minio:
         image: 'minio/minio:latest'
-        container_name: livewire26d_minio
+        container_name: hybrid26a_minio
         ports:
-            - '${MINIO_API_PORT:-9710}:9000'
-            - '${MINIO_CONSOLE_PORT:-9711}:9001'
+            - '${MINIO_API_PORT_EXPOSED}:9000'
+            - '${MINIO_CONSOLE_PORT_EXPOSED}:9001'
         environment:
             MINIO_ROOT_USER: '${MINIO_ROOT_USER:-minioadmin}'
             MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD:-minioadmin123}'
         volumes:
             - './storage/docker/minio:/data'
         networks:
-            - livewire26d_net
+            - hybrid26a_net
         command: server /data --console-address ":9001"
         healthcheck:
-            test: [ "CMD", "mc", "ready", "local" ]
+            test: ["CMD", "mc", "ready", "local"]
             retries: 3
             timeout: 5s
 
@@ -114,12 +114,12 @@ services:
         build:
             context: ./deployment/docker/php
             dockerfile: Dockerfile
-        container_name: livewire26d_reverb
+        container_name: hybrid26a_reverb
         working_dir: /var/www/html
         volumes:
             - '.:/var/www/html'
         ports:
-            - '${REVERB_PORT:-8080}:8080'
+            - '${REVERB_PORT_EXPOSED}:8080'
         environment:
             - APP_KEY=${APP_KEY}
             - BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-reverb}
@@ -134,19 +134,19 @@ services:
             - REVERB_APP_KEY=${REVERB_APP_KEY}
             - REVERB_APP_SECRET=${REVERB_APP_SECRET}
             - REVERB_HOST=0.0.0.0
-            - REVERB_PORT=8080
+            - REVERB_PORT=${REVERB_PORT}
         depends_on:
             - postgres
             - redis
         networks:
-            - livewire26d_net
-        command: [ 'php', 'artisan', 'reverb:start', '--host=0.0.0.0', '--port=8080', '--debug' ]
+            - hybrid26a_net
+        command: ['php', 'artisan', 'reverb:start', '--host=0.0.0.0', '--port=8080', '--debug']
 
     queue:
         build:
             context: ./deployment/docker/php
             dockerfile: Dockerfile
-        container_name: livewire26d_queue
+        container_name: hybrid26a_queue
         working_dir: /var/www/html
         volumes:
             - '.:/var/www/html'
@@ -164,12 +164,12 @@ services:
             - REVERB_APP_KEY=${REVERB_APP_KEY}
             - REVERB_APP_SECRET=${REVERB_APP_SECRET}
             - REVERB_HOST=reverb
-            - REVERB_PORT=8080
+            - REVERB_PORT=${REVERB_PORT}
         depends_on:
             - postgres
             - redis
             - reverb
         networks:
-            - livewire26d_net
-        command: [ 'php', 'artisan', 'queue:work', '--tries=3', '--timeout=90' ]
+            - hybrid26a_net
+        command: ['php', 'artisan', 'queue:work', '--tries=3', '--timeout=90']
 
