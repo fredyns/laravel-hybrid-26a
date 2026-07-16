@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
   Eye,
-  Loader2,
   Plus,
   Search,
   ShieldCheck,
@@ -19,6 +18,7 @@ import { getErrorMessage } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { cn } from '@/lib/utils';
 
 const guardFilters = ['All', 'web', 'sanctum'] as const;
@@ -41,7 +41,7 @@ export function RolesPage() {
     [search, guard, page],
   );
 
-  const { data, isPending, isError, error, isFetching } = useRolesList(params);
+  const { data, isPending, isError, error } = useRolesList(params);
 
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -110,8 +110,6 @@ export function RolesPage() {
             </button>
           ))}
         </div>
-
-        {isFetching && !isPending && <Loader2 className="ms-auto size-4 animate-spin text-zinc-400" />}
       </div>
 
       {isError ? (
@@ -119,9 +117,7 @@ export function RolesPage() {
           {getErrorMessage(error, 'Unable to load roles.')}
         </p>
       ) : isPending ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="size-6 animate-spin text-zinc-400" />
-        </div>
+        <TableSkeleton rows={5} columns={6} />
       ) : (
         <div className="space-y-4">
           <div className="w-full overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-lg">

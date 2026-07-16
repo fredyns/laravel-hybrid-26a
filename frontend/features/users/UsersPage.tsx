@@ -4,7 +4,6 @@ import {
   Columns3,
   Eye,
   KeyRound,
-  Loader2,
   Plus,
   Search,
   SquarePen,
@@ -27,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { cn } from '@/lib/utils';
 
 type ColumnKey = 'name' | 'email' | 'created_at';
@@ -86,7 +86,7 @@ export function UsersPage() {
     [debouncedSearch, sortBy, sortDir, perPage, page],
   );
 
-  const { data, isPending, isError, error, isFetching } = useUsersList(params);
+  const { data, isPending, isError, error } = useUsersList(params);
 
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -138,8 +138,6 @@ export function UsersPage() {
         </div>
 
         <div className="ms-auto flex items-center gap-3">
-          {isFetching && !isPending && <Loader2 className="size-4 animate-spin text-zinc-400" />}
-
           <Input
             type="number"
             min={1}
@@ -191,9 +189,7 @@ export function UsersPage() {
           {getErrorMessage(error, 'Unable to load users.')}
         </p>
       ) : isPending ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="size-6 animate-spin text-zinc-400" />
-        </div>
+        <TableSkeleton rows={5} columns={4} />
       ) : (
         <div className="space-y-4">
           <div className="w-full overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-lg">

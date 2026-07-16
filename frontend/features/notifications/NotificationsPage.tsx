@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Bell, Check, CheckCheck, Loader2, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
 import {
   useDeleteNotification,
   useMarkAllNotificationsRead,
@@ -10,6 +10,7 @@ import {
 import { getErrorMessage } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 function variantBadge(variant: string | undefined): 'emerald' | 'amber' | 'indigo' | 'default' {
   switch (variant) {
@@ -69,9 +70,7 @@ export function NotificationsPage() {
           {getErrorMessage(error, 'Unable to load notifications.')}
         </p>
       ) : isPending ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="size-6 animate-spin text-zinc-400" />
-        </div>
+        <TableSkeleton rows={5} columns={4} />
       ) : (
         <div className="space-y-4">
           <div className="w-full overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-lg">
