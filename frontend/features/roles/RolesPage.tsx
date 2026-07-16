@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
-  ChevronLeft,
-  ChevronRight,
   Eye,
   Loader2,
   Plus,
@@ -21,7 +19,6 @@ import { getErrorMessage } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
 const guardFilters = ['All', 'web', 'sanctum'] as const;
@@ -126,84 +123,103 @@ export function RolesPage() {
           <Loader2 className="size-6 animate-spin text-zinc-400" />
         </div>
       ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
-                <TableHead>Name</TableHead>
-                <TableHead>Guard</TableHead>
-                <TableHead>Permissions</TableHead>
-                <TableHead>Users</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-end">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {roles.map((role) => (
-                <TableRow key={role.id}>
-                  <TableCell className="font-medium">{role.name}</TableCell>
-                  <TableCell>
-                    <Badge>{role.guard_name}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                      <ShieldCheck className="size-4" />
-                      {role.permissions_count ?? 0}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{role.users_count ?? 0}</TableCell>
-                  <TableCell>{role.protected && <Badge variant="amber">Protected</Badge>}</TableCell>
-                  <TableCell className="text-end">
-                    <div className="flex justify-end gap-1">
-                      {can('rbac.show') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          aria-label="View"
-                          onClick={() => navigate({ to: '/roles/$roleId', params: { roleId: role.id } })}
-                        >
-                          <Eye />
-                        </Button>
-                      )}
-                      {can('rbac.update') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          aria-label="Edit"
-                          onClick={() => void openEdit(role)}
-                        >
-                          <SquarePen />
-                        </Button>
-                      )}
-                      {can('rbac.delete') && !role.protected && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 text-red-500 hover:text-red-600"
-                          aria-label="Delete"
-                          onClick={() => {
-                            setSelectedRole(role);
-                            setDeleteOpen(true);
-                          }}
-                        >
-                          <Trash2 />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {roles.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
-                    No roles found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+        <div className="space-y-4">
+          <div className="w-full overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
+                <tr>
+                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Name
+                  </th>
+                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Guard
+                  </th>
+                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Permissions
+                  </th>
+                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Users
+                  </th>
+                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Type
+                  </th>
+                  <th className="px-3 py-3 text-end text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/60">
+                {roles.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12">
+                      <p className="text-center text-sm text-muted-foreground">No roles found.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  roles.map((role) => (
+                    <tr key={role.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
+                      <td className="px-3 py-4 first:ps-0 last:pe-0 font-medium">{role.name}</td>
+                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                        <Badge>{role.guard_name}</Badge>
+                      </td>
+                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                        <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <ShieldCheck className="size-4" />
+                          {role.permissions_count ?? 0}
+                        </span>
+                      </td>
+                      <td className="px-3 py-4 first:ps-0 last:pe-0 text-sm text-muted-foreground">
+                        {role.users_count ?? 0}
+                      </td>
+                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                        {role.protected && <Badge variant="amber">Protected</Badge>}
+                      </td>
+                      <td className="px-3 py-4 first:ps-0 last:pe-0 text-end">
+                        <div className="flex justify-end gap-1">
+                          {can('rbac.show') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="View"
+                              onClick={() => navigate({ to: '/roles/$roleId', params: { roleId: role.id } })}
+                            >
+                              <Eye />
+                            </Button>
+                          )}
+                          {can('rbac.update') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="Edit"
+                              onClick={() => void openEdit(role)}
+                            >
+                              <SquarePen />
+                            </Button>
+                          )}
+                          {can('rbac.delete') && !role.protected && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-red-500 hover:text-red-600"
+                              aria-label="Delete"
+                              onClick={() => {
+                                setSelectedRole(role);
+                                setDeleteOpen(true);
+                              }}
+                            >
+                              <Trash2 />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
           {meta && (
             <div className="flex items-center justify-between gap-4">
@@ -211,35 +227,31 @@ export function RolesPage() {
                 Showing {meta.from ?? 0} to {meta.to ?? 0} of {meta.total} results
               </p>
               {meta.last_page > 1 && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
-                    size="icon"
-                    className="size-8"
-                    aria-label="Previous page"
-                    disabled={meta.current_page <= 1}
+                    size="sm"
                     onClick={() => setPage((value) => value - 1)}
+                    disabled={meta.current_page <= 1}
                   >
-                    <ChevronLeft />
+                    Previous
                   </Button>
                   <span className="px-2 text-sm text-muted-foreground">
                     Page {meta.current_page} of {meta.last_page}
                   </span>
                   <Button
                     variant="outline"
-                    size="icon"
-                    className="size-8"
-                    aria-label="Next page"
-                    disabled={meta.current_page >= meta.last_page}
+                    size="sm"
                     onClick={() => setPage((value) => value + 1)}
+                    disabled={meta.current_page >= meta.last_page}
                   >
-                    <ChevronRight />
+                    Next
                   </Button>
                 </div>
               )}
             </div>
           )}
-        </>
+        </div>
       )}
 
       <RoleFormDialog open={formOpen} onOpenChange={setFormOpen} role={selectedRole} />

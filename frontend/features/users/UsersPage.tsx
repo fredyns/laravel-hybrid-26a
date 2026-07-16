@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Columns3,
   Eye,
   KeyRound,
@@ -29,7 +27,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
 type ColumnKey = 'name' | 'email' | 'created_at';
@@ -107,21 +104,6 @@ export function UsersPage() {
       setSortDir('asc');
     }
     setPage(1);
-  }
-
-  function SortableHead({ column, label }: { column: SortColumn; label: string }) {
-    return (
-      <button
-        type="button"
-        onClick={() => sortByColumn(column)}
-        className="inline-flex cursor-pointer items-center gap-1"
-      >
-        {label}
-        {sortBy === column && (
-          <ChevronDown className={cn('size-3.5 text-zinc-400', sortDir === 'asc' && 'rotate-180')} />
-        )}
-      </button>
-    );
   }
 
   const users = data?.data ?? [];
@@ -213,98 +195,138 @@ export function UsersPage() {
           <Loader2 className="size-6 animate-spin text-zinc-400" />
         </div>
       ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
-                {visible.name && (
-                  <TableHead>
-                    <SortableHead column="name" label="Name" />
-                  </TableHead>
-                )}
-                {visible.email && (
-                  <TableHead>
-                    <SortableHead column="email" label="Email" />
-                  </TableHead>
-                )}
-                {visible.created_at && (
-                  <TableHead>
-                    <SortableHead column="created_at" label="Created" />
-                  </TableHead>
-                )}
-                <TableHead className="text-end">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  {visible.name && <TableCell className="font-medium">{user.name}</TableCell>}
-                  {visible.email && <TableCell className="text-muted-foreground">{user.email}</TableCell>}
-                  {visible.created_at && (
-                    <TableCell className="text-muted-foreground">{formatDateTime(user.created_at)}</TableCell>
+        <div className="space-y-4">
+          <div className="w-full overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
+                <tr>
+                  {visible.name && (
+                    <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                      <button
+                        type="button"
+                        onClick={() => sortByColumn('name')}
+                        className={cn(
+                          'inline-flex cursor-pointer items-center gap-1.5 hover:opacity-60',
+                        )}
+                      >
+                        Name
+                        {sortBy === 'name' && (
+                          <ChevronDown className={cn('size-3.5 text-zinc-400', sortDir === 'asc' && 'rotate-180')} />
+                        )}
+                      </button>
+                    </th>
                   )}
-                  <TableCell className="text-end">
-                    <div className="flex justify-end gap-1">
-                      {can('users.show') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          aria-label="View"
-                          onClick={() => navigate({ to: '/users/$userId', params: { userId: user.id } })}
-                        >
-                          <Eye />
-                        </Button>
+                  {visible.email && (
+                    <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                      <button
+                        type="button"
+                        onClick={() => sortByColumn('email')}
+                        className={cn(
+                          'inline-flex cursor-pointer items-center gap-1.5 hover:opacity-60',
+                        )}
+                      >
+                        Email
+                        {sortBy === 'email' && (
+                          <ChevronDown className={cn('size-3.5 text-zinc-400', sortDir === 'asc' && 'rotate-180')} />
+                        )}
+                      </button>
+                    </th>
+                  )}
+                  {visible.created_at && (
+                    <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                      <button
+                        type="button"
+                        onClick={() => sortByColumn('created_at')}
+                        className={cn(
+                          'inline-flex cursor-pointer items-center gap-1.5 hover:opacity-60',
+                        )}
+                      >
+                        Created
+                        {sortBy === 'created_at' && (
+                          <ChevronDown className={cn('size-3.5 text-zinc-400', sortDir === 'asc' && 'rotate-180')} />
+                        )}
+                      </button>
+                    </th>
+                  )}
+                  <th className="px-3 py-3 text-end text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/60">
+                {users.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={Object.values(visible).filter(Boolean).length + 1}
+                      className="py-12"
+                    >
+                      <p className="text-center text-sm text-muted-foreground">No users found.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((user) => (
+                    <tr key={user.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
+                      {visible.name && <td className="px-3 py-4 first:ps-0 last:pe-0 font-medium">{user.name}</td>}
+                      {visible.email && <td className="px-3 py-4 first:ps-0 last:pe-0 text-sm text-muted-foreground">{user.email}</td>}
+                      {visible.created_at && (
+                        <td className="px-3 py-4 first:ps-0 last:pe-0 text-sm text-muted-foreground">
+                          {formatDateTime(user.created_at)}
+                        </td>
                       )}
-                      {can('users.update') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          aria-label="Edit"
-                          onClick={() => openDialog('form', user)}
-                        >
-                          <SquarePen />
-                        </Button>
-                      )}
-                      {can('users.change-password') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          aria-label="Change password"
-                          onClick={() => openDialog('password', user)}
-                        >
-                          <KeyRound />
-                        </Button>
-                      )}
-                      {can('users.delete') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 text-red-500 hover:text-red-600"
-                          aria-label="Delete"
-                          onClick={() => openDialog('delete', user)}
-                        >
-                          <Trash2 />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {users.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={Object.values(visible).filter(Boolean).length + 1}
-                    className="py-12 text-center text-muted-foreground"
-                  >
-                    No users found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                      <td className="px-3 py-4 first:ps-0 last:pe-0 text-end">
+                        <div className="flex justify-end gap-1">
+                          {can('users.show') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="View"
+                              onClick={() => navigate({ to: '/users/$userId', params: { userId: user.id } })}
+                            >
+                              <Eye />
+                            </Button>
+                          )}
+                          {can('users.update') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="Edit"
+                              onClick={() => openDialog('form', user)}
+                            >
+                              <SquarePen />
+                            </Button>
+                          )}
+                          {can('users.change-password') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="Change password"
+                              onClick={() => openDialog('password', user)}
+                            >
+                              <KeyRound />
+                            </Button>
+                          )}
+                          {can('users.delete') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-red-500 hover:text-red-600"
+                              aria-label="Delete"
+                              onClick={() => openDialog('delete', user)}
+                            >
+                              <Trash2 />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
           {meta && (
             <div className="flex items-center justify-between gap-4">
@@ -312,35 +334,31 @@ export function UsersPage() {
                 Showing {meta.from ?? 0} to {meta.to ?? 0} of {meta.total} results
               </p>
               {meta.last_page > 1 && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
-                    size="icon"
-                    className="size-8"
-                    aria-label="Previous page"
-                    disabled={meta.current_page <= 1}
+                    size="sm"
                     onClick={() => setPage((value) => value - 1)}
+                    disabled={meta.current_page <= 1}
                   >
-                    <ChevronLeft />
+                    Previous
                   </Button>
                   <span className="px-2 text-sm text-muted-foreground">
                     Page {meta.current_page} of {meta.last_page}
                   </span>
                   <Button
                     variant="outline"
-                    size="icon"
-                    className="size-8"
-                    aria-label="Next page"
-                    disabled={meta.current_page >= meta.last_page}
+                    size="sm"
                     onClick={() => setPage((value) => value + 1)}
+                    disabled={meta.current_page >= meta.last_page}
                   >
-                    <ChevronRight />
+                    Next
                   </Button>
                 </div>
               )}
             </div>
           )}
-        </>
+        </div>
       )}
 
       <UserFormDialog open={dialog === 'form'} onOpenChange={(open) => !open && setDialog(null)} user={selectedUser} />

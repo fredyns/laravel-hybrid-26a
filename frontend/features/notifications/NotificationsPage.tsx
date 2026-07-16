@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Bell, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Loader2, Trash2 } from 'lucide-react';
 import {
   useDeleteNotification,
   useMarkAllNotificationsRead,
@@ -10,7 +10,6 @@ import {
 import { getErrorMessage } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 function variantBadge(variant: string | undefined): 'emerald' | 'amber' | 'indigo' | 'default' {
   switch (variant) {
@@ -73,115 +72,117 @@ export function NotificationsPage() {
         <div className="flex justify-center py-16">
           <Loader2 className="size-6 animate-spin text-zinc-400" />
         </div>
-      ) : notifications.length === 0 ? (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
-                <TableHead>Status</TableHead>
-                <TableHead>Notification</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead className="text-end">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-          </Table>
-          <div className="flex flex-col items-center gap-2 border-b border-zinc-100 py-12 text-center dark:border-zinc-700/60">
-            <Bell className="size-6 text-zinc-300 dark:text-zinc-600" />
-            <p className="text-sm text-muted-foreground">No notifications yet.</p>
-          </div>
-        </>
       ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
-                <TableHead>Status</TableHead>
-                <TableHead>Notification</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead className="text-end">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {notifications.map((notification) => (
-                <TableRow key={notification.id}>
-                  <TableCell>
-                    {notification.read_at ? (
-                      <Badge>Read</Badge>
-                    ) : (
-                      <Badge variant={variantBadge(notification.data.variant)}>Unread</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-medium">{notification.data.title ?? 'Notification'}</p>
-                    {notification.data.body && (
-                      <p className="mt-0.5 text-muted-foreground">{notification.data.body}</p>
-                    )}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {formatTime(notification.created_at)}
-                  </TableCell>
-                  <TableCell className="text-end">
-                    <div className="flex justify-end gap-1">
-                      {!notification.read_at && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          aria-label="Mark as read"
-                          onClick={() => void run(markRead.mutateAsync(notification.id))}
-                        >
-                          <Check />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-red-500 hover:text-red-600"
-                        aria-label="Delete"
-                        onClick={() => void run(remove.mutateAsync(notification.id))}
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="space-y-4">
+          <div className="w-full overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
+                <tr>
+                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Status
+                  </th>
+                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Notification
+                  </th>
+                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Time
+                  </th>
+                  <th className="px-3 py-3 text-end text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700/60">
+                {notifications.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-12">
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        <Bell className="size-6 text-zinc-300 dark:text-zinc-600" />
+                        <p className="text-sm text-muted-foreground">No notifications yet.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  notifications.map((notification) => (
+                    <tr key={notification.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
+                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                        {notification.read_at ? (
+                          <Badge>Read</Badge>
+                        ) : (
+                          <Badge variant={variantBadge(notification.data.variant)}>Unread</Badge>
+                        )}
+                      </td>
+                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                        <p className="font-medium">{notification.data.title ?? 'Notification'}</p>
+                        {notification.data.body && (
+                          <p className="mt-0.5 text-sm text-muted-foreground">{notification.data.body}</p>
+                        )}
+                      </td>
+                      <td className="px-3 py-4 first:ps-0 last:pe-0 whitespace-nowrap text-sm text-muted-foreground">
+                        {formatTime(notification.created_at)}
+                      </td>
+                      <td className="px-3 py-4 first:ps-0 last:pe-0 text-end">
+                        <div className="flex justify-end gap-1">
+                          {!notification.read_at && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label="Mark as read"
+                              onClick={() => void run(markRead.mutateAsync(notification.id))}
+                            >
+                              <Check />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 text-red-500 hover:text-red-600"
+                            aria-label="Delete"
+                            onClick={() => void run(remove.mutateAsync(notification.id))}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-          {meta && meta.last_page > 1 && (
+          {meta && (
             <div className="flex items-center justify-between gap-4">
               <p className="text-sm text-muted-foreground">
                 Showing {meta.from ?? 0} to {meta.to ?? 0} of {meta.total} results
               </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  aria-label="Previous page"
-                  disabled={meta.current_page <= 1}
-                  onClick={() => setPage((value) => value - 1)}
-                >
-                  <ChevronLeft />
-                </Button>
-                <span className="px-2 text-sm text-muted-foreground">
-                  Page {meta.current_page} of {meta.last_page}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  aria-label="Next page"
-                  disabled={meta.current_page >= meta.last_page}
-                  onClick={() => setPage((value) => value + 1)}
-                >
-                  <ChevronRight />
-                </Button>
-              </div>
+              {meta.last_page > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((value) => value - 1)}
+                    disabled={meta.current_page <= 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="px-2 text-sm text-muted-foreground">
+                    Page {meta.current_page} of {meta.last_page}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((value) => value + 1)}
+                    disabled={meta.current_page >= meta.last_page}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
