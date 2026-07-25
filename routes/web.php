@@ -1,10 +1,8 @@
 <?php
 
-use App\Livewire\Pages\Notifications\Index as NotificationsIndex;
-use App\Livewire\Pages\Roles\Index as RolesIndex;
-use App\Livewire\Pages\Roles\Show as RolesShow;
-use App\Livewire\Pages\Users\Index as UsersIndex;
-use App\Livewire\Pages\Users\Show as UsersShow;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Roles\RoleController;
+use App\Http\Controllers\Users\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -18,24 +16,17 @@ Route::post('layout-mode', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
 
-    Route::livewire('users', UsersIndex::class)
-        ->middleware('can:users.index')
-        ->name('users.index');
+    Route::controller(UserController::class)->group(function () {
+        Route::get('users', 'index')->name('users.index');
+        Route::get('users/{user}', 'show')->name('users.show');
+    });
 
-    Route::livewire('users/{user}', UsersShow::class)
-        ->middleware('can:users.show')
-        ->name('users.show');
+    Route::controller(RoleController::class)->group(function () {
+        Route::get('roles', 'index')->name('roles.index');
+        Route::get('roles/{role}', 'show')->name('roles.show');
+    });
 
-    Route::livewire('roles', RolesIndex::class)
-        ->middleware('can:rbac.index')
-        ->name('roles.index');
-
-    Route::livewire('roles/{role}', RolesShow::class)
-        ->middleware('can:rbac.show')
-        ->name('roles.show');
-
-    Route::livewire('notifications', NotificationsIndex::class)
-        ->name('notifications.index');
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
 });
 
 require __DIR__.'/settings.php';
