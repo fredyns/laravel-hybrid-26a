@@ -55,7 +55,7 @@
             </flux:menu>
         </flux:dropdown>
 
-        <livewire:notification-bell />
+        <x-notification-bell />
 
         <flux:separator vertical variant="subtle" class="mx-1 my-2" />
 
