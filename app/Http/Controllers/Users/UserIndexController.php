@@ -7,11 +7,11 @@ use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 
-class UserController extends Controller
+class UserIndexController extends Controller
 {
     use AuthorizesRequests;
 
-    public function index(Request $request)
+    public function __invoke(Request $request)
     {
         $this->authorize('users.index');
 
@@ -44,12 +44,5 @@ class UserController extends Controller
             'perPage',
             'visibleColumns'
         ));
-    }
-
-    public function show(User $user)
-    {
-        $this->authorize('users.show');
-
-        return view('users.show', compact('user'));
     }
 }

@@ -7,13 +7,12 @@ use App\Http\Controllers\Controller;
 use App\Models\RBAC\Role;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
-class RoleController extends Controller
+class RoleIndexController extends Controller
 {
     use AuthorizesRequests;
 
-    public function index(Request $request)
+    public function __invoke(Request $request)
     {
         $this->authorize('rbac.index');
 
@@ -38,17 +37,5 @@ class RoleController extends Controller
             'perPage',
             'guards'
         ));
-    }
-
-    public function show(Role $role)
-    {
-        $this->authorize('rbac.show');
-
-        $permissionGroups = $role->permissions
-            ->pluck('name')
-            ->sort()
-            ->groupBy(fn (string $name) => Str::before($name, '.'));
-
-        return view('roles.show', compact('role', 'permissionGroups'));
     }
 }
