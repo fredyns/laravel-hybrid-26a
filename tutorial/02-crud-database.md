@@ -189,4 +189,6 @@ Expected: `0` tasks, and ten permission rows (five names × two guards).
 Because tests run migrations against sqlite `:memory:`, the new permissions are automatically
 available in every test — nothing extra to seed.
 
-Next: [part 2 — the web pages →](03-crud-web.md)
+Next: [part 2 — the web pages →](03-crud-web.md), or skip straight to
+[part 3 — the REST API →](04-crud-api.md) if the resource doesn't need a server-rendered page
+(see [Paths through this tutorial](README.md#paths-through-this-tutorial)).

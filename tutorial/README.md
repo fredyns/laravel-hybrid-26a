@@ -35,3 +35,68 @@ protected by five permissions (`tasks.index/show/create/update/delete`), with:
 - a React SPA page at `http://localhost:9900/#/tasks` (token auth via `/api/tasks`).
 
 Each part ends with a **Verify** section; don't skip those — they catch mistakes early.
+
+## Paths through this tutorial
+
+The parts are independent above the database layer — pick the path that fits the feature:
+
+| Path | Parts | When |
+|---|---|---|
+| **Full stack** | 2 → 3 → 4 → 5 | The resource needs both frontends (like Users/Roles) |
+| **API + SPA only** | 2 → 4 → 5 | The resource only lives in the React app — **part 3 is skippable** |
+| **API only** | 2 → 4 | Headless / consumed by another client |
+
+Rules that hold on every path:
+
+- **Part 2 (database) is always required first**, including **all five permissions** — even when
+  skipping the web page, the API middleware checks `tasks.*` on the `sanctum` guard, and
+  `BasePermissionMigration` creates both guards in one migration anyway.
+- Parts 4 and 5 have no dependency on part 3; ignore the "Next" link at the end of part 2 and go
+  straight to [part 3 — REST API](04-crud-api.md) if you don't need the server-rendered page.
+- Finish each part's **Verify** section before starting the next.
+
+### File checklist — API + SPA path
+
+Backend (part 2 + 4), all created inside the container with `php artisan make:…` where a generator exists:
+
+```
+database/migrations/…_create_tasks_table.php
+database/migrations/…_add_tasks_permissions.php
+database/factories/TaskFactory.php
+app/Models/Task.php
+app/Http/Resources/TaskResource.php
+app/Http/Requests/Api/Tasks/StoreTaskRequest.php
+app/Http/Requests/Api/Tasks/UpdateTaskRequest.php
+app/Http/Controllers/Api/Tasks/IndexController.php
+app/Http/Controllers/Api/Tasks/StoreController.php
+app/Http/Controllers/Api/Tasks/ShowController.php
+app/Http/Controllers/Api/Tasks/UpdateController.php
+app/Http/Controllers/Api/Tasks/DestroyController.php
+routes/api.php                      (5 routes added, named api.tasks.*)
+tests/Feature/Api/TasksApiTest.php
+```
+
+Frontend (part 5), then `npm run build`:
+
+```
+frontend/features/tasks/tasks.api.ts
+frontend/features/tasks/useTasks.ts
+frontend/features/tasks/TaskFormDialog.tsx
+frontend/features/tasks/TasksPage.tsx
+frontend/router.tsx                 (route added)
+frontend/features/app-shell/nav.ts  (tasksItem + breadcrumb branch added)
+frontend/features/app-shell/Sidebar.tsx   (gated SidebarLink added)
+frontend/features/app-shell/AppShell.tsx  (gated header link added)
+```
+
+### File checklist — add the web page (part 3)
+
+```
+app/Http/Controllers/Tasks/TaskIndexController.php
+app/Http/Controllers/Tasks/TaskShowController.php
+resources/views/tasks/index.blade.php
+resources/views/tasks/show.blade.php
+routes/web.php                      (2 routes added, named tasks.*)
+resources/views/layouts/app/*.blade.php   (gated nav item per layout variant)
+tests/Feature/TasksTest.php
+```

@@ -465,10 +465,13 @@ const tasksRoute = createRoute({
 
 ## 5.6 Navigation + breadcrumbs (RBAC-gated)
 
-`frontend/features/app-shell/nav.ts` — declare the item with its permission:
+Three exact changes, all following existing code in the same files.
+
+**1. Declare the item** — `frontend/features/app-shell/nav.ts`, next to the existing
+`dashboardItem` / `notificationsItem` exports:
 
 ```ts
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList } from 'lucide-react'; // add to the existing lucide import
 
 export const tasksItem: NavItem = {
   label: 'Tasks',
@@ -479,18 +482,28 @@ export const tasksItem: NavItem = {
 };
 ```
 
-Render it in both shells, wrapped in the same `useCan()` check the Auth group uses:
+**2. Render it in both shells:**
 
-- `frontend/features/app-shell/Sidebar.tsx` — after `<SidebarLink item={dashboardItem} />`:
+- `frontend/features/app-shell/Sidebar.tsx` — import `tasksItem`, then directly after the
+  existing `<SidebarLink item={dashboardItem} collapsed={collapsed} />` line add:
 
   ```tsx
-  {(!tasksItem.permission || can(tasksItem.permission)) && <SidebarLink item={tasksItem} />}
+  {(!tasksItem.permission || can(tasksItem.permission)) && (
+    <SidebarLink item={tasksItem} collapsed={collapsed} />
+  )}
   ```
 
-- `frontend/features/app-shell/AppShell.tsx` (`HeaderShell` navbar) — a plain link next to the Auth
-  dropdown, styled like the dropdown trigger, gated the same way.
+  (`can` already exists in the component — it's used for `visibleAuthItems`.)
 
-Breadcrumbs — extend `breadcrumbsFor()` in `nav.ts`:
+- `frontend/features/app-shell/AppShell.tsx` (`HeaderShell` navbar) — import `tasksItem`,
+  duplicate the existing Dashboard `<Link>` block (the one rendering `<dashboardItem.icon />`),
+  place the copy after the Auth dropdown, and in the copy replace `dashboardItem` with
+  `tasksItem`, the `pathname.startsWith('/dashboard')` check with
+  `pathname.startsWith(tasksItem.match)`, and wrap the whole block in
+  `{can('tasks.index') && ( … )}`.
+
+**3. Breadcrumbs** — extend `breadcrumbsFor()` in `nav.ts`, alongside the existing `/users` and
+`/roles` branches:
 
 ```ts
 if (pathname.startsWith('/tasks')) {
