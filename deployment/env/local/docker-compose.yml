@@ -49,7 +49,7 @@ services:
         image: 'postgres:18-alpine'
         container_name: hybrid26a_postgres
         ports:
-            - '${DB_PORT_X}:5432'
+            - '${DB_PORT_EXPOSED}:5432'
         environment:
             POSTGRES_DB: '${DB_DATABASE}'
             POSTGRES_USER: '${DB_USERNAME}'
@@ -67,7 +67,7 @@ services:
         image: 'redis:7-alpine'
         container_name: hybrid26a_redis
         ports:
-            - '${REDIS_PORT_X}:6379'
+            - '${REDIS_PORT_EXPOSED}:6379'
         volumes:
             - './storage/docker/redis:/data'
         networks:
