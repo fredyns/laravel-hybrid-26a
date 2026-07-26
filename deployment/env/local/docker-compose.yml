@@ -4,6 +4,10 @@ networks:
 
 volumes:
     hybrid26a_node_modules:
+    hybrid26a_postgres:
+    hybrid26a_redis:
+    hybrid26a_mailpit:
+    hybrid26a_minio:
 
 services:
     app:
@@ -55,7 +59,7 @@ services:
             POSTGRES_USER: '${DB_USERNAME}'
             POSTGRES_PASSWORD: '${DB_PASSWORD}'
         volumes:
-            - './storage/docker/postgres:/var/lib/postgresql'
+            - 'hybrid26a_postgres:/var/lib/postgresql/data'
         networks:
             - hybrid26a_net
         healthcheck:
@@ -69,7 +73,7 @@ services:
         ports:
             - '${REDIS_PORT_EXPOSED}:6379'
         volumes:
-            - './storage/docker/redis:/data'
+            - 'hybrid26a_redis:/data'
         networks:
             - hybrid26a_net
         healthcheck:
@@ -87,7 +91,7 @@ services:
             MP_MAX_MESSAGES: 5000
             MP_DATA_FILE: /data/mailpit.db
         volumes:
-            - './storage/docker/mailpit:/data'
+            - 'hybrid26a_mailpit:/data'
         networks:
             - hybrid26a_net
 
@@ -101,7 +105,7 @@ services:
             MINIO_ROOT_USER: '${MINIO_ROOT_USER:-minioadmin}'
             MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD:-minioadmin123}'
         volumes:
-            - './storage/docker/minio:/data'
+            - 'hybrid26a_minio:/data'
         networks:
             - hybrid26a_net
         command: server /data --console-address ":9001"
