@@ -119,6 +119,7 @@ services:
             context: ./deployment/docker/php
             dockerfile: Dockerfile
         container_name: hybrid26a_reverb
+        user: '1000:1000'
         working_dir: /var/www/html
         volumes:
             - '.:/var/www/html'
@@ -151,6 +152,7 @@ services:
             context: ./deployment/docker/php
             dockerfile: Dockerfile
         container_name: hybrid26a_queue
+        user: '1000:1000'
         working_dir: /var/www/html
         volumes:
             - '.:/var/www/html'
