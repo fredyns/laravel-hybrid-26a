@@ -39,7 +39,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   return (
     <th
       className={cn(
-        'px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200',
+        'px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200',
         className,
       )}
       {...props}
@@ -48,7 +48,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
-  return <td className={cn('px-3 py-4 first:ps-0 last:pe-0', className)} {...props} />;
+  return <td className={cn('px-4 py-4', className)} {...props} />;
 }
 
 // Enhanced Data Table component using TanStack Table
@@ -102,7 +102,7 @@ function DataTable<TData, TValue>({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200"
+                    className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200"
                   >
                     <div
                       onClick={header.column.getToggleSortingHandler()}
@@ -128,7 +128,7 @@ function DataTable<TData, TValue>({
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-4 first:ps-0 last:pe-0">
+                  <td key={cell.id} className="px-4 py-4">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}

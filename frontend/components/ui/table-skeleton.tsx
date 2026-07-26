@@ -14,7 +14,7 @@ function TableSkeleton({ rows = 5, columns = 4 }: TableSkeletonProps) {
             {Array.from({ length: columns }).map((_, i) => (
               <th
                 key={i}
-                className="px-3 py-3 text-start first:ps-0 last:pe-0"
+                className="px-4 py-3 text-start"
               >
                 <Skeleton className="h-4 w-24 rounded" />
               </th>
@@ -27,7 +27,7 @@ function TableSkeleton({ rows = 5, columns = 4 }: TableSkeletonProps) {
               {Array.from({ length: columns }).map((_, colIndex) => (
                 <td
                   key={colIndex}
-                  className="px-3 py-4 first:ps-0 last:pe-0"
+                  className="px-4 py-4"
                 >
                   <Skeleton className="h-4 w-full rounded" />
                 </td>
@@ -48,7 +48,7 @@ function RowSkeleton({ columns = 4 }: RowSkeletonProps) {
   return (
     <tr>
       {Array.from({ length: columns }).map((_, i) => (
-        <td key={i} className="px-3 py-4 first:ps-0 last:pe-0">
+        <td key={i} className="px-4 py-4">
           <Skeleton className="h-4 w-full rounded" />
         </td>
       ))}

@@ -77,16 +77,16 @@ export function NotificationsPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
                 <tr>
-                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Status
                   </th>
-                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Notification
                   </th>
-                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Time
                   </th>
-                  <th className="px-3 py-3 text-end text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-end text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Actions
                   </th>
                 </tr>
@@ -104,23 +104,23 @@ export function NotificationsPage() {
                 ) : (
                   notifications.map((notification) => (
                     <tr key={notification.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
-                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                      <td className="px-4 py-4">
                         {notification.read_at ? (
                           <Badge>Read</Badge>
                         ) : (
                           <Badge variant={variantBadge(notification.data.variant)}>Unread</Badge>
                         )}
                       </td>
-                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                      <td className="px-4 py-4">
                         <p className="font-medium">{notification.data.title ?? 'Notification'}</p>
                         {notification.data.body && (
                           <p className="mt-0.5 text-sm text-muted-foreground">{notification.data.body}</p>
                         )}
                       </td>
-                      <td className="px-3 py-4 first:ps-0 last:pe-0 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {formatTime(notification.created_at)}
                       </td>
-                      <td className="px-3 py-4 first:ps-0 last:pe-0 text-end">
+                      <td className="px-4 py-4 text-end">
                         <div className="flex justify-end gap-1">
                           {!notification.read_at && (
                             <Button

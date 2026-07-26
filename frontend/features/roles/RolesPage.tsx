@@ -124,22 +124,22 @@ export function RolesPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
                 <tr>
-                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Name
                   </th>
-                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Guard
                   </th>
-                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Permissions
                   </th>
-                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Users
                   </th>
-                  <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Type
                   </th>
-                  <th className="px-3 py-3 text-end text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-end text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Actions
                   </th>
                 </tr>
@@ -154,23 +154,23 @@ export function RolesPage() {
                 ) : (
                   roles.map((role) => (
                     <tr key={role.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
-                      <td className="px-3 py-4 first:ps-0 last:pe-0 font-medium">{role.name}</td>
-                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                      <td className="px-4 py-4 font-medium">{role.name}</td>
+                      <td className="px-4 py-4">
                         <Badge>{role.guard_name}</Badge>
                       </td>
-                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                      <td className="px-4 py-4">
                         <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                           <ShieldCheck className="size-4" />
                           {role.permissions_count ?? 0}
                         </span>
                       </td>
-                      <td className="px-3 py-4 first:ps-0 last:pe-0 text-sm text-muted-foreground">
+                      <td className="px-4 py-4 text-sm text-muted-foreground">
                         {role.users_count ?? 0}
                       </td>
-                      <td className="px-3 py-4 first:ps-0 last:pe-0">
+                      <td className="px-4 py-4">
                         {role.protected && <Badge variant="amber">Protected</Badge>}
                       </td>
-                      <td className="px-3 py-4 first:ps-0 last:pe-0 text-end">
+                      <td className="px-4 py-4 text-end">
                         <div className="flex justify-end gap-1">
                           {can('rbac.show') && (
                             <Button

@@ -197,7 +197,7 @@ export function UsersPage() {
               <thead className="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
                 <tr>
                   {visible.name && (
-                    <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                       <button
                         type="button"
                         onClick={() => sortByColumn('name')}
@@ -213,7 +213,7 @@ export function UsersPage() {
                     </th>
                   )}
                   {visible.email && (
-                    <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                       <button
                         type="button"
                         onClick={() => sortByColumn('email')}
@@ -229,7 +229,7 @@ export function UsersPage() {
                     </th>
                   )}
                   {visible.created_at && (
-                    <th className="px-3 py-3 text-start text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                    <th className="px-4 py-3 text-start text-sm font-medium text-zinc-800 dark:text-zinc-200">
                       <button
                         type="button"
                         onClick={() => sortByColumn('created_at')}
@@ -244,7 +244,7 @@ export function UsersPage() {
                       </button>
                     </th>
                   )}
-                  <th className="px-3 py-3 text-end text-sm font-medium text-zinc-800 first:ps-0 last:pe-0 dark:text-zinc-200">
+                  <th className="px-4 py-3 text-end text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     Actions
                   </th>
                 </tr>
@@ -262,14 +262,14 @@ export function UsersPage() {
                 ) : (
                   users.map((user) => (
                     <tr key={user.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/30">
-                      {visible.name && <td className="px-3 py-4 first:ps-0 last:pe-0 font-medium">{user.name}</td>}
-                      {visible.email && <td className="px-3 py-4 first:ps-0 last:pe-0 text-sm text-muted-foreground">{user.email}</td>}
+                      {visible.name && <td className="px-4 py-4 font-medium">{user.name}</td>}
+                      {visible.email && <td className="px-4 py-4 text-sm text-muted-foreground">{user.email}</td>}
                       {visible.created_at && (
-                        <td className="px-3 py-4 first:ps-0 last:pe-0 text-sm text-muted-foreground">
+                        <td className="px-4 py-4 text-sm text-muted-foreground">
                           {formatDateTime(user.created_at)}
                         </td>
                       )}
-                      <td className="px-3 py-4 first:ps-0 last:pe-0 text-end">
+                      <td className="px-4 py-4 text-end">
                         <div className="flex justify-end gap-1">
                           {can('users.show') && (
                             <Button
