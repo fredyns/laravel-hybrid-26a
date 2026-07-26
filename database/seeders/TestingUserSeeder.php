@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class TestingUserSeeder extends Seeder
@@ -27,7 +28,9 @@ class TestingUserSeeder extends Seeder
                 continue;
             }
 
-            User::factory()->create($user);
+            $role = Arr::pull($user, 'role');
+            $user = User::factory()->create($user);
+            $user->addRoleName($role);
         }
     }
 }
