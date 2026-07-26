@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MyAccessController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Roles\RoleCreateController;
 use App\Http\Controllers\Roles\RoleEditController;
@@ -21,6 +22,7 @@ Route::post('layout-mode', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::get('my-access', MyAccessController::class)->name('my-access');
 
     Route::get('users', UserIndexController::class)->name('users.index');
     Route::get('users/create', UserCreateController::class)->name('users.create');
