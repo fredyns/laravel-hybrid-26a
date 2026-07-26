@@ -4,13 +4,13 @@ We build a **Task** resource: `title` (string), `notes` (nullable text), `done` 
 Everything below runs inside the app container:
 
 ```bash
-docker exec livewire26d_app php artisan <command>
+docker exec hybrid26a_app php artisan <command>
 ```
 
 ## 2.1 Table migration
 
 ```bash
-docker exec livewire26d_app php artisan make:migration create_tasks_table --no-interaction
+docker exec hybrid26a_app php artisan make:migration create_tasks_table --no-interaction
 ```
 
 Models in this repo use **uuid primary keys** (like `users` and `rbac_roles`). Edit the generated
@@ -50,7 +50,7 @@ its content with a `BasePermissionMigration` subclass (pattern:
 `database/migrations/2026_06_24_240401_add_users_permissions.php`):
 
 ```bash
-docker exec livewire26d_app php artisan make:migration add_tasks_permissions --no-interaction
+docker exec hybrid26a_app php artisan make:migration add_tasks_permissions --no-interaction
 ```
 
 ```php
@@ -76,15 +76,15 @@ return new class extends BasePermissionMigration
 };
 ```
 
-That's the whole file. The base class creates each permission **for both guards** (`web` for
-Livewire, `sanctum` for the API) and syncs the role grants; `down()` reverses it. No controller or
+That's the whole file. The base class creates each permission **for both guards** (`web` for the
+server-rendered pages, `sanctum` for the API) and syncs the role grants; `down()` reverses it. No controller or
 seeder code ever creates permissions.
 
 ## 2.3 Model + factory
 
 ```bash
-docker exec livewire26d_app php artisan make:model Task --no-interaction
-docker exec livewire26d_app php artisan make:factory TaskFactory --model=Task --no-interaction
+docker exec hybrid26a_app php artisan make:model Task --no-interaction
+docker exec hybrid26a_app php artisan make:factory TaskFactory --model=Task --no-interaction
 ```
 
 `app/Models/Task.php` — follow the `User`/`Role` conventions (uuid keys, `#[Fillable]` attribute,
@@ -171,17 +171,17 @@ class TaskFactory extends Factory
 ## 2.4 Migrate
 
 ```bash
-docker exec livewire26d_app php artisan migrate --no-interaction
+docker exec hybrid26a_app php artisan migrate --no-interaction
 ```
 
 ## Verify
 
 ```bash
 # Table exists and model works
-docker exec livewire26d_app php artisan tinker --execute 'echo App\Models\Task::count();'
+docker exec hybrid26a_app php artisan tinker --execute 'echo App\Models\Task::count();'
 
 # Permissions exist on BOTH guards and super-admin has them
-docker exec livewire26d_app php artisan tinker --execute 'echo App\Models\RBAC\Permission::where("name", "like", "tasks.%")->get(["name","guard_name"]);'
+docker exec hybrid26a_app php artisan tinker --execute 'echo App\Models\RBAC\Permission::where("name", "like", "tasks.%")->get(["name","guard_name"]);'
 ```
 
 Expected: `0` tasks, and ten permission rows (five names × two guards).
@@ -189,4 +189,4 @@ Expected: `0` tasks, and ten permission rows (five names × two guards).
 Because tests run migrations against sqlite `:memory:`, the new permissions are automatically
 available in every test — nothing extra to seed.
 
-Next: [part 2 — the Livewire page →](03-crud-livewire.md)
+Next: [part 2 — the web pages →](03-crud-web.md)

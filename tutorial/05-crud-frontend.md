@@ -507,7 +507,7 @@ without `tasks.index` never see the nav item — and the API middleware still en
 npm run build        # typecheck + blade assets + SPA
 ```
 
-Then at http://localhost:9700:
+Then at http://localhost:9900:
 
 1. `/#/login` as `admin@admin.com` / `admin` → **Tasks** appears in the sidebar.
 2. `/#/tasks` — create, edit, and delete a task; search and paginate.
@@ -515,7 +515,7 @@ Then at http://localhost:9700:
 4. DevTools console — no errors.
 
 For fast iteration during development use `npm run dev:frontend` (SPA on `:5173` with HMR; set
-`VITE_API_URL=http://localhost:9700/api` in the env for cross-origin API calls).
+`VITE_API_URL=http://localhost:9900/api` in the env for cross-origin API calls).
 
 ---
 

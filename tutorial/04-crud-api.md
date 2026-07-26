@@ -80,7 +80,7 @@ class UpdateTaskRequest extends StoreTaskRequest
 
 ## 4.3 Controllers — one class per action
 
-`app/Http/Controllers/Api/Tasks/IndexController.php` (search/sort/pagination mirror the Livewire
+`app/Http/Controllers/Api/Tasks/IndexController.php` (search/sort/pagination mirror the web
 Index; the paginated Resource collection yields the standard `{data, links, meta}` envelope the SPA
 expects):
 
@@ -254,7 +254,7 @@ Route::prefix('tasks')->group(function (): void {
 ```
 
 Scramble picks these up automatically — the new endpoints appear at
-http://localhost:9700/docs/api with schemas derived from the FormRequests and Resource.
+http://localhost:9900/docs/api with schemas derived from the FormRequests and Resource.
 
 ## 4.5 Pest tests
 
@@ -359,20 +359,20 @@ Notes:
 ## Verify
 
 ```bash
-docker exec livewire26d_app php artisan route:list --path=api/tasks
-docker exec livewire26d_app php artisan test --compact --filter=TasksApi
-docker exec livewire26d_app ./vendor/bin/pint --dirty
+docker exec hybrid26a_app php artisan route:list --path=api/tasks
+docker exec hybrid26a_app php artisan test --compact --filter=TasksApi
+docker exec hybrid26a_app ./vendor/bin/pint --dirty
 ```
 
 Manual smoke test with a real token:
 
 ```bash
 # login → grab "token" from the response
-curl -s -X POST http://localhost:9700/api/auth/login \
+curl -s -X POST http://localhost:9900/api/auth/login \
   -H 'Content-Type: application/json' -H 'Accept: application/json' \
   -d '{"email":"admin@admin.com","password":"admin"}'
 
-curl -s http://localhost:9700/api/tasks -H 'Accept: application/json' -H 'Authorization: Bearer <token>'
+curl -s http://localhost:9900/api/tasks -H 'Accept: application/json' -H 'Authorization: Bearer <token>'
 ```
 
 Next: [part 4 — the React frontend →](05-crud-frontend.md)
