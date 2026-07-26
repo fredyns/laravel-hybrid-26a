@@ -4,4 +4,4 @@ args = ["artisan", "boost:mcp"]
 
 [mcp_servers.chrome-devtools]
 command = "npx"
-args = ["chrome-devtools-mcp@latest"]
+args = ["-y", "chrome-devtools-mcp@latest"]
