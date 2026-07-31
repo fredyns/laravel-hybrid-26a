@@ -1,13 +1,10 @@
 networks:
     hybrid26a_net:
         driver: bridge
-
-volumes:
-    hybrid26a_node_modules:
-    hybrid26a_postgres:
-    hybrid26a_redis:
-    hybrid26a_mailpit:
-    hybrid26a_minio:
+        ipam:
+            driver: default
+            config:
+                - subnet:  10.250.101.0/24
 
 services:
     app:
@@ -18,7 +15,6 @@ services:
         working_dir: /var/www/html
         volumes:
             - '.:/var/www/html'
-            - 'hybrid26a_node_modules:/var/www/html/node_modules'
         environment:
             - DB_HOST=${DB_HOST}
             - DB_PORT=${DB_PORT}
@@ -59,7 +55,7 @@ services:
             POSTGRES_USER: '${DB_USERNAME}'
             POSTGRES_PASSWORD: '${DB_PASSWORD}'
         volumes:
-            - 'hybrid26a_postgres:/var/lib/postgresql'
+            - './storage/docker/postgres:/var/lib/postgresql'
         networks:
             - hybrid26a_net
         healthcheck:
@@ -73,7 +69,7 @@ services:
         ports:
             - '${REDIS_PORT_EXPOSED}:6379'
         volumes:
-            - 'hybrid26a_redis:/data'
+            - './storage/docker/redis:/data'
         networks:
             - hybrid26a_net
         healthcheck:
@@ -91,7 +87,7 @@ services:
             MP_MAX_MESSAGES: 5000
             MP_DATA_FILE: /data/mailpit.db
         volumes:
-            - 'hybrid26a_mailpit:/data'
+            - './storage/docker/mailpit:/data'
         networks:
             - hybrid26a_net
 
@@ -105,7 +101,7 @@ services:
             MINIO_ROOT_USER: '${MINIO_ROOT_USER:-minioadmin}'
             MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD:-minioadmin123}'
         volumes:
-            - 'hybrid26a_minio:/data'
+            - './storage/docker/minio:/data'
         networks:
             - hybrid26a_net
         command: server /data --console-address ":9001"
