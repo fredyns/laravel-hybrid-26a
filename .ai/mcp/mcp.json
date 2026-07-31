@@ -1,15 +1,18 @@
 {
   "mcpServers": {
     "laravel-boost": {
-      "command": "C:\\laragon\\bin\\php\\php-8.3.10-Win32-vs16-x64\\php.exe",
+      "command": "php",
       "args": [
-        "C:\\Dev\\_php\\laravel-wire-26a\\artisan",
+        "artisan",
         "boost:mcp"
       ]
     },
     "chrome-devtools": {
-        "command": "npx",
-        "args": ["-y", "chrome-devtools-mcp@latest"]
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
     }
   }
 }
