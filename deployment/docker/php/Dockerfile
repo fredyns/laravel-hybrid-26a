@@ -60,3 +60,6 @@ RUN chown -R app:app /var/www/html
 # USER app
 
 CMD ["php-fpm"]
+
+# Allow git to run inside the container
+RUN git config --global --add safe.directory /var/www/html
