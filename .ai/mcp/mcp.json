@@ -8,10 +8,9 @@
       ]
     },
     "chrome-devtools": {
-      "command": "npx",
+      "command": "/usr/bin/bash",
       "args": [
-        "-y",
-        "chrome-devtools-mcp@latest"
+        "./deployment/env/local/chrome-devtools-mcp"
       ]
     }
   }
