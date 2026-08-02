@@ -1,16 +1,17 @@
 {
   "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
+    },
     "laravel-boost": {
       "command": "php",
       "args": [
         "artisan",
         "boost:mcp"
-      ]
-    },
-    "chrome-devtools": {
-      "command": "/usr/bin/bash",
-      "args": [
-        "./deployment/env/local/chrome-devtools-mcp"
       ]
     }
   }
