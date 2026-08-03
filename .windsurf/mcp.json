@@ -6,10 +6,6 @@
                 "artisan",
                 "boost:mcp"
             ]
-        },
-        "chrome-devtools": {
-            "command": "cmd.exe",
-            "args": ["/d", "/c", "npx.cmd", "-y", "chrome-devtools-mcp@latest"]
         }
     }
 }
