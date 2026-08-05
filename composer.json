@@ -1,6 +1,6 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "fredyns/laravel-hybrid-26a",
+    "name": "fredyns/laravel-kit-2026",
     "type": "project",
     "description": "Personal Laravel starter kit with Livewire and React frontend.",
     "keywords": [
