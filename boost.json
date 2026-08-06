@@ -10,10 +10,12 @@
     "mcp": true,
     "nightwatch": false,
     "packages": [
-        "livewire/blaze"
+        "livewire/blaze",
+        "spatie/laravel-permission"
     ],
     "sail": false,
     "skills": [
+        "infer-conventions",
         "fortify-development",
         "laravel-best-practices",
         "fluxui-development",
@@ -21,6 +23,7 @@
         "pest-testing",
         "tailwindcss-development",
         "echo-development",
-        "blaze-optimize"
+        "blaze-optimize",
+        "laravel-permission-development"
     ]
 }
