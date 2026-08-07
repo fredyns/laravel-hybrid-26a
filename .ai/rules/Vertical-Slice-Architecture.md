@@ -1,14 +1,39 @@
-# Laravel Feature-Oriented Architecture Rules
+# Laravel Vertical-Slice Architecture Rules
 
-This project uses a **feature-oriented / vertical-slice architecture** under `app/Features`.
+This project uses a **feature-oriented / vertical-slice architecture** under `app/Features`, with **Livewire 4 + Flux UI** as the blessed UI stack.
 
-The main goal is to keep all code related to a business use case close together instead of organizing application code primarily by technical layers such as global `Controllers`, `Services`, `Policies`, `Requests`, `Jobs`, or `Listeners` directories.
+The main goal: keep all code related to a business use case close together, instead of organizing primarily by technical layers (global `Controllers`, `Services`, `Policies`, `Requests`, `Jobs`, `Listeners` directories).
 
-These rules are intended for both developers and AI coding assistants working in this codebase.
+Core principles (details in the numbered rules):
 
-## 1. Organize code by feature and use case
+> **Code that changes together lives together.**
 
-Use:
+> **Organize by business capability and use case, not by technical layer.**
+
+> **Every entry point — Livewire component, HTTP controller, CLI command, queue job, schedule, webhook, event listener — is a thin adapter into a use case, never the business logic itself.**
+
+> **Use direct calls inside a Feature; use Laravel Events between top-level Features.**
+
+> **Keep use-case-specific code local. Promote shared code only when reuse is real.**
+
+These rules are for both developers and AI coding assistants working in this codebase.
+
+## 1. Status and scope
+
+- This document describes the **target architecture**, adopted incrementally. `app/Features/` starts empty; the pilot migrates the **User** feature (plus a **Notification** consumer feature).
+- Until an area is migrated, its existing code under `app/Http`, `app/Livewire`, `app/Actions`, `app/Services` **remains valid** — follow the local conventions there. Do not mass-migrate.
+- **New features go under `app/Features`** following these rules.
+- Existing Livewire settings pages (`app/Livewire/Pages/Settings/*`) stay where they are until a Settings feature migration is planned.
+
+## 2. UI stack
+
+- **Livewire 4** renders interactive pages and forms. Inside Features, use **class-based components** (rule 8). SFC/MFC formats (`⚡` components under `resources/views`) remain fine for shared, non-feature UI.
+- **Flux UI** (including Flux Pro) is the component library — use `<flux:*>` components in feature views. This kit is personally licensed; `composer.fluxui.dev` credentials are a prerequisite for `composer install`. Local Flux overrides live in `resources/views/flux/`.
+- **Alpine.js** ships with Livewire — use it for purely client-side behavior instead of custom JS where possible.
+- Tailwind v4 (CSS-first config in `resources/css/app.css`), Vite, Echo/Reverb for realtime.
+- Do not introduce Inertia, React, Vue, or Volt.
+
+## 3. Organize code by feature and use case
 
 ```text
 app/
@@ -21,57 +46,32 @@ app/
         └── ...
 ```
 
-Top-level folders such as `Order`, `Invoice`, and `Customer` represent a business capability, domain boundary, or resource area.
+Top-level folders (`Order`, `Invoice`, `Customer`) represent a business capability, domain boundary, or resource area.
 
-Subfolders such as `Create`, `Update`, `Approve`, `Cancel`, `Import`, and `Sync` represent individual use cases or vertical slices.
+Subfolders (`Create`, `Update`, `Approve`, `Cancel`, `Import`, `Sync`) represent individual use cases — vertical slices.
 
-Do not introduce additional architecture layers such as:
+Do not introduce extra architecture layers (`Modules/`, `Domains/`, `Application/`, `Infrastructure/`) unless a concrete need emerges.
 
-```text
-Modules/
-Domains/
-Application/
-Infrastructure/
-```
+## 4. Colocate use-case-specific components
 
-unless the project has a concrete need for them.
-
-## 2. Colocate use-case-specific components
-
-Any component used exclusively by one use case must live inside that use-case folder.
-
-Example:
+Any component used exclusively by one use case lives inside that use-case folder:
 
 ```text
 app/Features/Order/Create/
-├── WebController.php
-├── ApiController.php
-├── CreateOrder.php
-├── Request.php
-├── Policy.php
-├── Job.php
-├── Listener.php
-└── view.blade.php
+├── CreateOrderPage.php          // Livewire full-page component (web UI adapter)
+├── create-order-page.blade.php  // its view (Flux components)
+├── CreateOrderApiController.php // API adapter
+├── CreateOrderRequest.php       // validation (single source, see rule 11)
+├── CreateOrder.php              // the use case — business logic
+├── script.js                    // optional page JS (rule 13)
+└── style.css                    // optional page CSS (rule 13)
 ```
 
-Do not create technical subdirectories such as:
+Do not create technical subdirectories (`Controllers/`, `Services/`, `Requests/`, `Policies/`, `Jobs/`, `Listeners/`) inside a feature unless file count makes grouping genuinely useful. Prefer a flat use-case folder while it remains easy to scan.
 
-```text
-Controllers/
-Services/
-Requests/
-Policies/
-Jobs/
-Listeners/
-```
+## 5. Organize by use case, not transport
 
-inside a feature unless the number of files or complexity makes that additional grouping genuinely useful.
-
-Prefer a flat use-case folder while it remains easy to understand.
-
-## 3. Organize by use case, not transport
-
-The directory structure should describe **what the application does**, not how the action is triggered.
+The directory structure describes **what the application does**, not how the action is triggered.
 
 Prefer:
 
@@ -84,301 +84,250 @@ Order/
 └── SyncMarketplace/
 ```
 
-Avoid structures centered around transport or framework mechanisms:
+Avoid transport-centric structures:
 
 ```text
 Order/
 ├── Http/
+├── Livewire/
 ├── Jobs/
 ├── Commands/
-├── Events/
 └── Webhooks/
 ```
 
-HTTP, Queue, CLI, Schedule, Event, and Webhook are entry points or adapters into a use case.
+Livewire, HTTP, Queue, CLI, Schedule, Event, and Webhook are entry points into a use case — not the architectural boundary.
 
-They are not the primary architectural boundary.
+## 6. Naming
 
-## 4. Keep controllers thin
+Class names are descriptive and business-oriented. Never use generic per-slice names (`Request.php`, `Policy.php`, `Service.php`, `Manager.php`, `Helper.php`) — with dozens of slices they make fuzzy-find, logs, and stack traces ambiguous.
 
-Controllers should only handle HTTP concerns such as:
+| Role | Pattern | Example |
+|---|---|---|
+| Use case (action) | `<Verb><Model>` | `CreateOrder`, `ExpireOrders` |
+| Livewire full-page component | `<Verb/Noun><Model>Page` | `CreateOrderPage`, `IndexOrdersPage` |
+| Livewire embedded component | descriptive | `CreateOrderForm`, `OrderStatusBadge` |
+| Web controller (static page) | `<Verb><Model>WebController` | `ShowOrderWebController` |
+| API controller | `<Verb><Model>ApiController` | `CreateOrderApiController` |
+| Form request | `<Verb><Model>Request` | `CreateOrderRequest` |
+| Job | `<Verb><Model>Job` | `ImportOrdersJob` |
+| Command | `<Verb><Model>Command` | `ExpireOrdersCommand` |
+| Event | past-tense fact | `OrderCreated` |
+| Listener | `<Event>Listener` | `OrderCreatedListener` |
 
-- receiving the request;
-- obtaining validated input;
-- invoking the use case;
-- returning a response, redirect, view, or resource.
+Fixed filenames (never renamed): `view.blade.php` (single-view controller slice), `script.js`, `style.css`, and the registration files of rule 29. Livewire component views are named after their component in kebab-case (`create-order-page.blade.php`).
 
-Do not place core business logic in controllers.
+## 7. Choose the right adapter
 
-Example:
+| Situation | Adapter |
+|---|---|
+| Interactive page (forms, live search/sort, modals) | Livewire full-page component via `Route::livewire()` |
+| Static read-only page | Plain controller + Blade view |
+| Machine consumer / SPA / integration | API controller + FormRequest + Resource |
+| Slow, retryable, background work | Queue Job delegating to the use case |
+| Time-driven work | Command + `schedules.php` entry |
+| Third-party callback | Webhook controller (HTTP adapter) |
+| Reaction to another Feature's fact | Event Listener |
+
+Not every page must be Livewire. A page with no interactivity is cheaper and simpler as controller + Blade.
+
+## 8. Livewire components are adapters
+
+A Livewire component handles UI concerns only: bind input, validate, call the use case, redirect/render. Business logic lives in the action.
 
 ```php
-class ApiController
-{
-    public function __invoke(Request $request, CreateOrder $action)
-    {
-        $order = $action->execute($request->validated());
+namespace App\Features\Order\Create;
 
-        return response()->json($order);
+use Livewire\Component;
+
+class CreateOrderPage extends Component
+{
+    public string $reference = '';
+
+    public function save(CreateOrder $action)
+    {
+        $validated = $this->validate(CreateOrderRequest::rulesFor());
+
+        $order = $action->execute($validated);
+
+        return $this->redirectRoute('orders.show', $order);
+    }
+
+    public function render()
+    {
+        return view('features::Order.Create.create-order-page');
     }
 }
 ```
 
-## 5. Web and API entry points may share the same use case
+Conventions (verified against Livewire 4.1 in `vendor/`):
 
-If the Web and API interfaces perform the same business operation, both must use the same use-case implementation.
+- **Full-page components need no registration.** Route them by class in the slice's `web-routes.php`:
 
-Example:
+  ```php
+  Route::livewire('orders/create', CreateOrderPage::class)
+      ->middleware('can:orders.create')
+      ->name('orders.create');
+  ```
 
-```text
-Create/
-├── WebController.php
-├── ApiController.php
-├── CreateOrder.php
-├── Request.php
-└── Policy.php
+  The default layout is `layouts::app` (`config('livewire.component_layout')`); override per component with `#[Layout]` when needed.
+- **Embedded components** (`<livewire:...>` inside another view) resolve through the `features::` component namespace registered by `FeatureServiceProvider` (rule 29). The name maps dot-segments to StudlyCase classes: `<livewire:features::order.create.create-order-form />` → `App\Features\Order\Create\CreateOrderForm`.
+- Components stay **class-based** inside Features (official Livewire option for "established conventions around class-based architecture"). Views are colocated and rendered via the `features::` **view** namespace (rule 12).
+- `$this->dispatch()` browser/Livewire events are **UI signals** (toast, refresh, close-modal). They are not domain events and never carry cross-feature business meaning — that is rule 23's job.
+
+## 9. Keep controllers thin
+
+Controllers (web and API) only handle HTTP concerns: receive the request, obtain validated input, invoke the use case, return a response.
+
+```php
+class CreateOrderApiController
+{
+    public function __invoke(CreateOrderRequest $request, CreateOrder $action): JsonResponse
+    {
+        $order = $action->execute($request->validated());
+
+        return response()->json([
+            'message' => 'Order created',
+            'order' => OrderResource::make($order),
+        ], 201);
+    }
+}
 ```
 
-Expected dependency:
+Feature controllers are plain invokable classes (add the `AuthorizesRequests` trait when needed) — they do not extend `App\Http\Controllers\Controller`.
+
+## 10. Web and API entry points share the same use case
+
+If the Livewire page and the API perform the same business operation, both call the same action:
 
 ```text
-WebController ─┐
-               ├── CreateOrder
-ApiController ─┘
+CreateOrderPage ──┐
+                  ├── CreateOrder
+CreateOrderApiController ──┘
 ```
 
-Do not duplicate business logic between Web and API controllers.
+Never duplicate business logic between adapters.
 
-## 6. Prefer explicit business-oriented class names
+## 11. One validation source per slice
 
-Prefer names such as:
+Validation rules are declared **once** per use case, as a static method on the slice's FormRequest, with context passed explicitly (never via `$this->route()` inside the static):
 
-```text
-CreateOrder.php
-ApproveOrder.php
-CalculatePricing.php
-ExpireOrders.php
-SyncMarketplace.php
+```php
+class UpdateOrderRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return self::rulesFor($this->route('order'));
+    }
+
+    /** @return array<string, array<int, mixed>> */
+    public static function rulesFor(?Order $order = null): array
+    {
+        return [
+            'reference' => ['required', 'string', Rule::unique('orders')->ignore($order)],
+        ];
+    }
+}
 ```
 
-Avoid vague names such as:
+- API adapters use the FormRequest normally (`$request->validated()`).
+- Livewire components consume the same source: `$this->validate(UpdateOrderRequest::rulesFor($this->order))`.
+- A slice with no API may keep rules directly on the Livewire component — introduce the static only when a second consumer appears.
 
-```text
-Service.php
-Manager.php
-Helper.php
-Utils.php
-BusinessRules.php
-Common.php
+## 12. Colocated views
+
+`FeatureServiceProvider` registers `app/Features` as the `features::` **view namespace**. Dots map to directories:
+
+```php
+view('features::Order.Create.create-order-page')
+// → app/Features/Order/Create/create-order-page.blade.php
 ```
 
-A class name should communicate its responsibility.
+Constraints:
 
-Generic names are acceptable only when the namespace provides enough context and the name does not create ambiguity in code navigation, logs, debugging, or stack traces.
+- Feature and slice folder names must never contain dots.
+- View names are case-sensitive on Linux — path segments are PascalCase exactly matching the folders.
+- Layouts (`<x-layouts::app>`), shared Blade components, and Flux components remain global and work unchanged from feature views.
 
-## 7. Promote shared components to the nearest common parent
+Note the distinction: `features::` is used by **two** registries — the Blade view namespace (`view('features::Order.Create...')`, PascalCase) and the Livewire component namespace (`<livewire:features::order.create...>`, kebab-case). Same word, different resolvers.
 
-If a component is used by only one use case, keep it inside that use case:
+## 13. Colocated assets
 
-```text
-Order/Create/CalculateSomething.php
-```
+A slice may own page-level `script.js` / `style.css`. They are wired in three places:
 
-If it becomes shared by multiple use cases within `Order`, move it to the nearest common parent:
+1. `vite.config.js` globs them as entries:
 
-```text
-Order/
-├── Create/
-├── Update/
-├── Approve/
-├── CalculatePricing.php
-├── CheckCreditLimit.php
-└── GenerateOrderNumber.php
-```
+   ```js
+   import { globSync } from 'node:fs';
 
-Use this rule:
+   const featureAssets = globSync(['app/Features/**/script.js', 'app/Features/**/style.css'])
+       .map((p) => p.replaceAll('\\', '/'));
+   // laravel({ input: [...defaultEntries, ...featureAssets], refresh: [...refreshPaths, 'app/Features/**'], ... })
+   ```
+
+2. The view loads them: `@vite(['app/Features/Order/Index/style.css', 'app/Features/Order/Index/script.js'])`.
+3. `resources/css/app.css` must contain `@source '../../app/Features';` so Tailwind scans feature views — **without it, production builds purge every class used only in feature views.**
+
+Prefer Livewire/Alpine over custom `script.js`; reach for colocated assets only when a page genuinely needs bespoke JS/CSS.
+
+## 14. Promote shared components to the nearest common parent
 
 ```text
 used by one slice
 → keep it inside that slice
 
 used by multiple slices in the same feature
-→ move it to the feature parent
+→ move it to the feature parent (e.g. Order/CalculatePricing.php, Order/OrderResource.php)
 
 used across multiple top-level features
 → identify the correct shared abstraction or business concept
 ```
 
-Do not immediately move reusable code into global dumping-ground directories such as:
+Do not preemptively move reusable code into global dumping grounds (`Services/`, `Helpers/`, `Utils/`, `Common/`).
+
+## 15. Follow a clear dependency direction
 
 ```text
-Services/
-Helpers/
-Utils/
-Common/
+Adapter (Livewire component / controller / job / command / listener)
+        ↓
+     Use case (action)
+        ↓
+Feature-local shared component (Order/CalculatePricing.php)
+        ↓
+Framework / Model / shared infrastructure
 ```
 
-## 8. Parent-level components must not depend on child use cases
-
-The preferred dependency direction is:
+Parent-level components must not depend on child slices:
 
 ```text
-Order/Create/*
-      ↓
-Order/*
-      ↓
-shared infrastructure / framework / model
+Avoid:  Order/CalculatePricing.php → Order/Create/*
 ```
 
-Avoid:
+A parent-level shared component stays reusable and never imports implementation details from a specific slice.
+
+## 16. Do not mirror URL paths literally
+
+Directories represent semantic use cases, not URL segments. For `/orders/{order}/approve` use `Order/Approve/`, not `Order/{order}/Approve/`. Likewise `/admin/orders/{order}/approve` does not require an `Admin/` feature if the business use case is still `Order/Approve`.
+
+## 17. Authorization
+
+- **Spatie permissions are the default story.** Route middleware `can:orders.create` and `$this->authorize('orders.create')` resolve through spatie/laravel-permission — permission-named abilities need **no** `Gate::define`. Permissions are seeded via the `app/DB/Base*Migration` classes.
+- `gates.php` (rule 29) exists only for **custom** abilities that are not plain permissions (e.g. model-state checks). Keep such a Gate's class/callback in the slice that owns it:
+
+  ```php
+  Gate::define('order.approve', [\App\Features\Order\Approve\ApproveOrderPolicy::class, 'authorize']);
+  ```
+
+- Blade keeps using the normal API: `@can('orders.create') ... @endcan`, `@can('orders.update', $order)`.
+
+## 18. Queue Jobs are adapters
+
+Jobs need no global registration — dispatch normally (`ImportOrdersJob::dispatch($payload)`), keep `handle()` thin, store the Job next to its use case:
 
 ```text
-Order/CalculatePricing.php
-      ↓
-Order/Create/*
+Order/Import/
+├── ImportOrders.php
+└── ImportOrdersJob.php
 ```
-
-A parent-level shared component should remain reusable and must not depend on implementation details from a specific child use case.
-
-## 9. Do not mirror URL paths literally
-
-Directories should represent semantic actions and use cases, not every URL segment.
-
-For:
-
-```text
-/orders/{order}/approve
-```
-
-use:
-
-```text
-Order/
-└── Approve/
-```
-
-not:
-
-```text
-Order/
-└── {order}/
-    └── Approve/
-```
-
-Likewise, `/admin/orders/{order}/approve` does not automatically require:
-
-```text
-Admin/
-└── Order/
-    └── Approve/
-```
-
-if the actual business use case still belongs to `Order/Approve`.
-
-## 10. Keep authorization close to the use case
-
-If an authorization rule exists only for one use case, place its authorization class or callback in that use-case folder.
-
-Example:
-
-```text
-Order/
-└── Create/
-    └── Policy.php
-```
-
-A Gate may map an ability to that class:
-
-```php
-Gate::define('order.create', [
-    \App\Features\Order\Create\Policy::class,
-    'authorize',
-]);
-```
-
-An invokable authorization class may also be used when appropriate.
-
-Blade continues to use Laravel's normal authorization API:
-
-```blade
-@can('order.create')
-    ...
-@endcan
-```
-
-For abilities involving a model:
-
-```blade
-@can('order.update', $order)
-    ...
-@endcan
-```
-
-Gate definitions may receive models or additional parameters.
-
-## 11. Registration files may be colocated and discovered recursively
-
-Registration files may live at a feature root or inside a specific use-case folder.
-
-Supported conventions may include:
-
-```text
-gates.php
-events.php
-schedules.php
-commands.php
-web-routes.php
-api-routes.php
-```
-
-Example:
-
-```text
-app/Features/
-└── Order/
-    ├── gates.php
-    ├── schedules.php
-    ├── Create/
-    │   └── events.php
-    └── Sync/
-        └── schedules.php
-```
-
-Use a single `FeatureServiceProvider` as the bridge between Laravel and `app/Features`.
-
-The provider may perform recursive discovery with Symfony Finder.
-
-Example:
-
-```php
-use Symfony\Component\Finder\Finder;
-
-private function loadFeatureFiles(string $filename): void
-{
-    $finder = Finder::create()
-        ->files()
-        ->name($filename)
-        ->in(app_path('Features'));
-
-    foreach ($finder as $file) {
-        require $file->getRealPath();
-    }
-}
-```
-
-Do not create a Service Provider for every feature unless there is a concrete need for feature-specific bootstrapping.
-
-## 12. Queue Jobs are adapters, not primary business logic
-
-Queue Jobs do not require global registration.
-
-They are dispatched normally:
-
-```php
-ImportOrdersJob::dispatch($payload);
-```
-
-A Job should remain thin and delegate to a use case:
 
 ```php
 class ImportOrdersJob implements ShouldQueue
@@ -390,521 +339,275 @@ class ImportOrdersJob implements ShouldQueue
 }
 ```
 
-Store the Job next to the use case it triggers:
+## 19. Treat queues and schedules as triggers
 
-```text
-Order/
-└── Import/
-    ├── ImportOrders.php
-    └── ImportOrdersJob.php
-```
-
-## 12. Use transactions around the atomic business change ---
-
-Place related persistence operations inside a database transaction when they must succeed or fail together.
-
-Dispatch cross-feature events only after the originating state is valid. When an event must not be processed before a transaction commits, use Laravel's after-commit behavior or another reliable post-commit mechanism.
-
-Do not allow a queued listener to observe uncommitted or rolled-back state.
-
-## 13. Treat queues and schedules as triggers
-
-A queue job or scheduled task is not automatically a separate business use case. It is usually an adapter that invokes one:
+A queue job or scheduled task is usually not a separate business use case — it is an adapter invoking one:
 
 ```text
 Scheduler → Job → ExpireOrders
 CLI Command ───→ ExpireOrders
-HTTP Controller → ExpireOrders
+Livewire page ─→ ExpireOrders
 ```
 
-Use jobs for slow, retryable, or background work. Keep the job's `handle` method thin:
+Use jobs for slow, retryable, or background work. Use `withoutOverlapping()` / `onOneServer()` on schedules that require them.
 
-```php
-final class ExpireOrdersJob implements ShouldQueue
-{
-    public function handle(ExpireOrders $expireOrders): void
-    {
-        $expireOrders->execute();
-    }
-}
-```
-
-Use safeguards such as `withoutOverlapping()` or `onOneServer()` when the scheduled operation requires them.
-
-## 14. CLI Commands are adapters
-
-CLI Commands should remain thin.
-
-Example:
+## 20. CLI Commands are adapters
 
 ```php
 class ExpireOrdersCommand extends Command
 {
+    protected $signature = 'orders:expire {--days=30}';
+
     public function handle(ExpireOrders $action): int
     {
-        $action->execute();
+        $action->execute((int) $this->option('days'));
 
         return self::SUCCESS;
     }
 }
 ```
 
-Store the Command next to its use case:
+Store the Command next to its use case and register it via the slice's `commands.php` (rule 29).
+
+## 21. Webhooks are HTTP adapters
+
+A webhook is an HTTP entry point. Store its controller next to the use case it triggers; register its route through the feature's `api-routes.php`:
 
 ```text
-Order/
-└── Expire/
-    ├── ExpireOrders.php
-    └── ExpireOrdersCommand.php
+Order/SyncMarketplace/
+├── SyncMarketplaceWebhookController.php
+├── SyncMarketplaceRequest.php
+└── SyncMarketplace.php
 ```
 
-Commands may be registered by `FeatureServiceProvider` through `$this->commands(...)` or through a consistent discovery convention.
+## 22. Use transactions around the atomic business change
 
-## 15. Webhooks are HTTP adapters
+Place persistence operations that must succeed or fail together inside a database transaction.
 
-A Webhook is still an HTTP entry point.
+Dispatch cross-feature events only after the originating state is valid. When an event must not be processed before the transaction commits, use Laravel's after-commit behavior (`ShouldQueueAfterCommit`, `afterCommit()`). A queued listener must never observe uncommitted or rolled-back state.
 
-Store its controller next to the use case it triggers.
+## 23. Use Laravel Events for communication between top-level Features
 
-Example:
-
-```text
-Order/
-└── SyncMarketplace/
-    ├── WebhookController.php
-    ├── Request.php
-    └── SyncMarketplace.php
-```
-
-Webhook routes may be registered through `api-routes.php` or another colocated route file discovered by `FeatureServiceProvider`.
-
-## 16. Internal processes usually require no explicit registration
-
-Internal actions, calculators, rules, mappers, processors, and similar classes normally require no registration.
-
-Use Laravel's container and autowiring directly.
-
-Example:
-
-```php
-class SomeJob
-{
-    public function handle(ApproveOrder $action): void
-    {
-        $action->execute();
-    }
-}
-```
-
-## 17. Use Laravel Events for communication between top-level Features
-
-**A top-level Feature must not directly depend on another Feature's internal implementation to trigger cross-feature side effects or workflows.**
+**A Feature must not depend on another Feature's internals to trigger cross-feature side effects.**
 
 Avoid:
 
 ```php
 namespace App\Features\Order\Create;
 
-use App\Features\Invoice\Create\CreateInvoice;
+use App\Features\Invoice\Create\CreateInvoice; // ← direct coupling
 
 class CreateOrder
 {
-    public function __construct(
-        private CreateInvoice $createInvoice,
-    ) {}
-
-    public function execute()
-    {
-        $order = ...;
-
-        $this->createInvoice->execute($order);
-    }
+    public function __construct(private CreateInvoice $createInvoice) {}
 }
 ```
 
-This creates direct coupling:
-
-```text
-Order
-  ↓
-Invoice
-```
-
-Instead, publish a Laravel Event:
+Instead, publish a domain event:
 
 ```php
 OrderCreated::dispatch($order);
 ```
 
-A consuming Feature may listen for that event:
+The consuming Feature listens:
+
+```text
+Order ──▶ OrderCreated event ◀── Invoice listener
+```
+
+The producer never knows which Features consume the event.
+
+## 24. Events represent facts that already happened
+
+Use domain language, past tense: `OrderCreated`, `OrderApproved`, `PaymentReceived`, `InvoiceIssued`.
+
+Never command-like names (`CreateInvoice`, `ProcessPayment`, `SendEmail`) — a command describes what should happen; an event describes what already did.
+
+## 25. Event and Listener ownership
+
+- The **Event** lives with the Feature that owns the fact, always at `<Feature>/Events/`:
+
+  ```text
+  Order/Events/OrderCreated.php
+  ```
+
+- The **Listener** lives in the Feature that reacts, inside its consuming use case:
+
+  ```text
+  Invoice/CreateFromOrder/
+  ├── OrderCreatedListener.php
+  ├── CreateInvoiceFromOrder.php
+  └── events.php
+  ```
+
+## 26. Avoid direct cross-feature implementation dependencies
+
+Code in one top-level Feature must not import internal classes of another (`use App\Features\Invoice\Create\CreateInvoice;` from inside `App\Features\Order\...` is forbidden).
+
+To react to another Feature's fact → use an Event. If multiple Features truly need the same business logic → extract a shared business concept; never make Features call each other directly.
+
+## 27. Event Listeners may be synchronous or queued
+
+Synchronous when the operation is lightweight, must complete in the same flow, or requires immediate consistency. Queued (`implements ShouldQueue`) when it is expensive, calls external APIs, sends mail/notifications, generates files, or need not finish before the response.
+
+The sync/queued choice never changes the Feature boundary. Note: a queued listener serializes its models; handle the model-deleted-before-processing case or accept the failure.
+
+## 28. Do not use Events for every internal call
+
+Events are for **cross-feature** communication and meaningful side effects. Inside one Feature, direct calls are clearer:
+
+```text
+Order/Create/CreateOrder → Order/CalculatePricing → Order/CheckCreditLimit
+```
+
+Do not replace explicit internal control flow with events.
+
+## 29. Registration files and FeatureServiceProvider
+
+One provider — `app/Providers/FeatureServiceProvider.php`, registered in `bootstrap/providers.php` — is the only bridge between Laravel and `app/Features`. No per-feature providers unless a concrete need appears. No business logic in the provider.
+
+Colocated registration files, discovered recursively (Symfony Finder, `sortByName()` for deterministic order), each with a strict contract:
+
+| File | Contract |
+|---|---|
+| `web-routes.php` | Route definitions; provider wraps the file in `Route::middleware('web')->group(...)` |
+| `api-routes.php` | Route definitions; provider wraps in `Route::middleware('api')->prefix('api')->group(...)` |
+| `gates.php` | `Gate::define(...)` calls (custom abilities only, rule 17) |
+| `events.php` | `Event::listen(EventClass::class, ListenerClass::class)` calls |
+| `commands.php` | **returns** `list<class-string>` of Command classes |
+| `schedules.php` | `Schedule::command(...)` facade calls |
+
+Provider skeleton:
 
 ```php
-namespace App\Features\Invoice\CreateFromOrder;
-
-class OrderCreatedListener
+class FeatureServiceProvider extends ServiceProvider
 {
-    public function handle(
-        OrderCreated $event,
-        CreateInvoiceFromOrder $action,
-    ): void {
-        $action->execute($event->order);
-    }
-}
-```
-
-The relationship becomes:
-
-```text
-Order
-  ↓
-OrderCreated event
-  ↑
-Invoice listener
-```
-
-The producer must not need to know which Features consume the event.
-
-## 18. Events represent facts that already happened
-
-Event names should use domain language and normally describe a completed fact.
-
-Prefer:
-
-```text
-OrderCreated
-OrderApproved
-OrderCancelled
-PaymentReceived
-InvoiceIssued
-CustomerActivated
-```
-
-Avoid command-like event names:
-
-```text
-CreateInvoice
-ProcessPayment
-SendEmail
-UpdateStock
-```
-
-A command describes something that should happen.
-
-An event describes something that has already happened.
-
-## 19. Event Listeners belong to the consuming Feature
-
-A Listener belongs to the Feature that reacts to the event, not to the Feature that produced it.
-
-Example:
-
-```text
-Order/
-└── Create/
-    └── CreateOrder.php
-
-Invoice/
-└── CreateFromOrder/
-    ├── OrderCreatedListener.php
-    └── CreateInvoiceFromOrder.php
-```
-
-The Event itself should live with the Feature that owns the fact being emitted.
-
-For example:
-
-```text
-Order/
-└── OrderCreated.php
-```
-
-or:
-
-```text
-Order/
-└── Create/
-    └── OrderCreated.php
-```
-
-Choose one convention and use it consistently throughout the project.
-
-## 20. Avoid direct cross-feature implementation dependencies
-
-By default, code inside one top-level Feature must not import internal implementation classes from another top-level Feature.
-
-Avoid imports such as:
-
-```php
-use App\Features\Invoice\Create\CreateInvoice;
-use App\Features\Customer\Update\UpdateCustomer;
-```
-
-from inside `App\Features\Order\...`.
-
-If one Feature needs to react to a fact from another Feature, use an Event.
-
-If multiple Features truly require the same reusable business logic, extract that logic into an appropriate shared abstraction or shared business concept instead of making Features call one another directly.
-
-## 21. Event Listeners may be synchronous or queued
-
-Use a synchronous Listener when:
-
-- the operation is lightweight;
-- it must complete in the same execution flow;
-- immediate consistency is required.
-
-Use a queued Listener when:
-
-- the operation is expensive;
-- it calls an external API;
-- it sends email or notifications;
-- it generates files or reports;
-- it performs synchronization;
-- it does not need to complete before returning the original response.
-
-Example:
-
-```php
-class CreateInvoiceOnOrderCreated implements ShouldQueue
-{
-    public function handle(OrderCreated $event): void
+    public function boot(): void
     {
-        // ...
+        $this->loadViewsFrom(app_path('Features'), 'features');
+
+        Livewire::addNamespace(
+            namespace: 'features',
+            classNamespace: 'App\\Features',
+            classPath: app_path('Features'),
+        );
+
+        $this->registerRoutes();      // skips when $this->app->routesAreCached()
+        $this->requireAll('gates.php');
+        $this->requireAll('events.php');
+        $this->registerCommands();    // console only; merges the returned arrays into $this->commands()
+        $this->registerSchedules();   // console only; callAfterResolving(Schedule::class, ...)
     }
 }
 ```
 
-Choosing synchronous versus queued execution does not change the Feature boundary.
+Operational notes:
 
-## 22. Do not use Events for every internal call
+- Route files contain **no closures** — class controllers / component classes only, so `route:cache` stays possible.
+- `event:cache` only affects auto-discovered listeners; explicit `Event::listen` in `events.php` is unaffected.
+- Discovery cost is a few sub-millisecond Finder scans; an optional `features:cache` command is a future optimization, not a current need.
 
-Events are primarily for **cross-feature communication**, decoupled reactions, and meaningful side effects.
+## 30. Internal classes require no registration
 
-Inside the same Feature, direct dependencies are allowed and usually clearer.
-
-Example:
-
-```text
-Order/Create/CreateOrder
-      ↓
-Order/CalculatePricing
-      ↓
-Order/CheckCreditLimit
-```
-
-Do not replace clear internal control flow with unnecessary Events.
-
-Use direct calls for required, explicit steps inside the same Feature.
-
-Use Events when decoupling Feature boundaries or representing reactions to completed business facts.
-
-## 23. Event registration follows the Feature convention
-
-Listeners may be registered through Laravel's event discovery or through colocated `events.php` files.
-
-Example:
+Actions, calculators, rules, mappers, and processors resolve through the container by type-hint — no binding, no registration:
 
 ```php
-use Illuminate\Support\Facades\Event;
-
-Event::listen(
-    \App\Features\Order\OrderCreated::class,
-    \App\Features\Invoice\CreateFromOrder\OrderCreatedListener::class,
-);
+public function handle(ApproveOrder $action): void
+{
+    $action->execute();
+}
 ```
 
-The registration file may live next to the consuming use case:
+## 31. Tests mirror features
 
 ```text
-Invoice/
-└── CreateFromOrder/
-    ├── OrderCreatedListener.php
-    ├── CreateInvoiceFromOrder.php
-    └── events.php
+tests/Feature/<Feature>/<UseCase>Test.php
+tests/Feature/Order/CreateTest.php
 ```
 
-`FeatureServiceProvider` may discover all `events.php` files recursively.
+- Web and API cases for the same slice live in the **same file** — both transports exercise one use case.
+- Livewire pages are tested with `Livewire::test(CreateOrderPage::class)` **plus** one plain HTTP smoke assertion (`$this->get(route('orders.create'))->assertOk()`) so routing and middleware stay covered.
+- Shared Pest helpers live in `tests/Pest.php`, never duplicated across test files.
+- Use model factories; `RefreshDatabase` applies to everything under `tests/Feature`.
 
-## 24. Avoid duplicated business logic
+## 32. Avoid duplicated business logic
 
-Do not copy business logic from one vertical slice to another merely to preserve slice isolation.
+Never copy business logic between slices to preserve isolation. Shared by multiple slices in one Feature → promote to the feature parent (rule 14).
 
-If logic becomes shared by multiple use cases within the same Feature, promote it to the nearest common parent.
+## 33. Do not introduce abstractions before they are needed
 
-Example:
+No interfaces, repositories, managers, or extra layers to satisfy a pattern. Start with the simplest implementation that expresses the use case. Extract an abstraction only for a concrete need: multiple implementations, real reuse, a real testing or integration boundary, or complexity that has already emerged. A one-statement use case may stay in its adapter — introduce the action class when logic exists.
 
-```text
-Order/
-├── Create/
-├── Update/
-└── CalculatePricing.php
-```
+## 34. Keep Laravel conventions where they remain useful
 
-## 25. Do not introduce abstractions before they are needed
+Feature organization changes **file ownership and locality** — it does not replace framework primitives. Keep using Form Requests, Gates, Events, Listeners, Queues, Scheduler, Eloquent, Middleware, Service Container, Route Model Binding, Validation, Notifications, named routes + `route()`, and Livewire's own testing utilities.
 
-Do not create interfaces, repositories, managers, factories, or additional layers solely to satisfy an architectural pattern.
+## 35. Rules for AI-generated changes
 
-Start with the simplest implementation that clearly expresses the use case.
+Before creating or moving code, determine:
 
-Extract an abstraction only when there is a concrete need, such as:
-
-- multiple implementations;
-- reusable business logic;
-- a real testing boundary;
-- an integration boundary;
-- complexity that has already emerged.
-
-## 26. Keep Laravel conventions where they remain useful
-
-Feature-oriented organization does not mean replacing Laravel's native mechanisms.
-
-Continue using Laravel features such as:
-
-- Form Requests;
-- Gates;
-- Events;
-- Listeners;
-- Queues;
-- Scheduler;
-- Eloquent;
-- Middleware;
-- Service Container;
-- Route Model Binding;
-- Validation;
-- Notifications.
-
-The main architectural difference is **file ownership and locality**, not replacing Laravel's framework primitives.
-
-## 27. Use one FeatureServiceProvider as the integration bridge
-
-Use one main provider, for example:
-
-```text
-app/Providers/FeatureServiceProvider.php
-```
-
-It acts as the integration bridge:
-
-```text
-Laravel
-   ↓
-FeatureServiceProvider
-   ↓
-app/Features/**
-```
-
-The provider may discover and register:
-
-```text
-web-routes.php
-api-routes.php
-gates.php
-events.php
-schedules.php
-commands.php
-```
-
-Do not place business logic inside `FeatureServiceProvider`.
-
-## 28. Follow a clear dependency direction
-
-Preferred dependency direction:
-
-```text
-Entry Point / Adapter
-        ↓
-     Use Case
-        ↓
-Feature-local shared component
-        ↓
-Framework / Model / Infrastructure
-```
-
-For cross-feature communication:
-
-```text
-Feature A
-   ↓
- Event
-   ↑
-Feature B Listener
-```
-
-Avoid:
-
-```text
-Feature A
-   ↓
-Feature B internal implementation
-```
-
-## 29. Rules for AI-generated changes
-
-Before creating or moving code, AI must determine:
-
-1. Which domain owns the behavior?
-2. Which use case performs it?
-3. Is the file business logic, a shared domain component, or a thin adapter?
-4. Is the component used by one slice, multiple slices in one domain, or multiple domains?
-5. Does cross-feature communication require a business event?
-6. Does Laravel require explicit registration or discovery for the new file?
+1. Which Feature owns the behavior, and which use case performs it?
+2. Is the file business logic, a shared feature component, or a thin adapter?
+3. Which adapter fits (rule 7) — and is the Livewire component/controller staying thin?
+4. Is the component used by one slice, multiple slices in one Feature, or multiple Features?
+5. Does cross-feature communication require a domain event (not a Livewire `dispatch()`)?
+6. Does the new file need registration (routes, embedded Livewire name, command, schedule, listener) or does it resolve automatically?
 7. Could ordering, transaction timing, queue retries, or idempotency affect correctness?
+8. Are validation rules declared exactly once for the slice (rule 11)?
 
-AI must preserve existing project conventions when they are more specific than this document. If a requested change conflicts with these rules, explain the conflict and choose the smallest safe deviation unless the user explicitly directs otherwise.
+Preserve existing project conventions when they are more specific than this document. If a requested change conflicts with these rules, explain the conflict and choose the smallest safe deviation unless the user directs otherwise.
 
-## 20. Reference structure
+## 36. Reference structure
 
 ```text
 app/Features/
-├── FeatureServiceProvider.php
 ├── Order/
 │   ├── Events/
 │   │   └── OrderCreated.php
-│   ├── Create/
-│   │   ├── WebController.php
-│   │   ├── ApiController.php
-│   │   ├── WebhookController.php
-│   │   ├── Request.php
-│   │   ├── CreateOrder.php // main business logic
-│   │   ├── Policy.php
-│   │   ├── view.blade.php
-│   │   ├── script.js // custom JS in page
-│   │   └── style.css // custom styling
-│   ├── Approve/
-│   │   └── ApproveOrder.php
-│   ├── Expire/
-│   │   ├── ExpireOrders.php
-│   │   ├── ExpireOrdersJob.php
-│   │   └── schedules.php
-│   ├── CalculatePricing.php
-│   ├── CheckCreditLimit.php
+│   ├── OrderResource.php            // shared by Index/Show/Create/Update
+│   ├── CalculatePricing.php         // shared feature-local logic
 │   ├── web-routes.php
 │   ├── api-routes.php
-│   └── gates.php
+│   ├── gates.php                    // only if custom gates exist
+│   ├── Index/
+│   │   ├── IndexOrdersPage.php      // Livewire page: search/sort/paginate
+│   │   ├── index-orders-page.blade.php
+│   │   ├── IndexOrdersApiController.php
+│   │   ├── script.js                // optional
+│   │   └── style.css                // optional
+│   ├── Create/
+│   │   ├── CreateOrderPage.php
+│   │   ├── create-order-page.blade.php
+│   │   ├── CreateOrderApiController.php
+│   │   ├── CreateOrderRequest.php
+│   │   └── CreateOrder.php          // the use case
+│   ├── Show/
+│   │   ├── ShowOrderWebController.php   // static page: controller + Blade
+│   │   ├── view.blade.php
+│   │   └── ShowOrderApiController.php
+│   ├── Approve/
+│   │   └── ApproveOrder.php
+│   └── Expire/
+│       ├── ExpireOrders.php
+│       ├── ExpireOrdersJob.php
+│       ├── ExpireOrdersCommand.php
+│       ├── commands.php
+│       └── schedules.php
 │
-├── Invoice/
-│   └── CreateFromOrder/
-│       ├── Listener.php
-│       ├── CreateInvoice.php
-│       └── events.php
-│
-└── Notification/
-    └── SendOrderConfirmation/
-        ├── Listener.php
-        ├── SendOrderConfirmation.php
+└── Invoice/
+    └── CreateFromOrder/
+        ├── OrderCreatedListener.php
+        ├── CreateInvoiceFromOrder.php
         └── events.php
+
+app/Providers/FeatureServiceProvider.php   // the single bridge (rule 29)
+
+tests/Feature/
+├── Order/
+│   ├── IndexTest.php
+│   ├── CreateTest.php
+│   ├── ShowTest.php
+│   └── ExpireTest.php
+└── Invoice/
+    └── CreateFromOrderTest.php
 ```
-
-## 30. Core principles
-
-Use these principles as the default architectural rules:
-
-> **Code that changes together should live together.**
-
-> **Organize code by business capability and use case, not by technical layer.**
-
-> **Keep use-case-specific code local. Promote shared code only when reuse is real.**
-
-> **Use direct calls inside a Feature; use Laravel Events for communication between top-level Features.**
-
-> **Treat HTTP, CLI, Queue, Schedule, Webhook, and Event Listener as adapters into a use case, not as the architecture itself.**
