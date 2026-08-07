@@ -28,7 +28,7 @@ use Spatie\Permission\Traits\HasRoles;
 /**
  * This is the model class for table "users".
  *
- * @property int $id
+ * @property string $id UUID (HasUuids)
  * @property string $name
  * @property string $email
  * @property Carbon|null $email_verified_at

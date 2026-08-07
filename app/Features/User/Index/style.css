@@ -1,0 +1,8 @@
+/* Colocated styles for the Users index page (loaded via @vite in index-users-page.blade.php). */
+
+.user-index-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}

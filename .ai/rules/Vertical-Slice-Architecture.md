@@ -20,8 +20,8 @@ These rules are for both developers and AI coding assistants working in this cod
 
 ## 1. Status and scope
 
-- This document describes the **target architecture**, adopted incrementally. `app/Features/` starts empty; the pilot migrates the **User** feature (plus a **Notification** consumer feature).
-- Until an area is migrated, its existing code under `app/Http`, `app/Livewire`, `app/Actions`, `app/Services` **remains valid** — follow the local conventions there. Do not mass-migrate.
+- This document describes the **target architecture**, adopted incrementally. The pilot is **implemented**: the **User** feature (web + API + purge schedule) and the **Notification** consumer feature live under `app/Features/`, wired through `app/Providers/FeatureServiceProvider.php`.
+- Until an area is migrated, its existing code under `app/Http`, `app/Livewire`, `app/Actions`, `app/Services` **remains valid** — follow the local conventions there. Do not mass-migrate. Still unmigrated: Roles, Notifications page/API, Settings, Auth, S3, Ajax.
 - **New features go under `app/Features`** following these rules.
 - Existing Livewire settings pages (`app/Livewire/Pages/Settings/*`) stay where they are until a Settings feature migration is planned.
 

@@ -1,29 +1,7 @@
 <?php
 
-use App\Enums\UserRole;
 use App\Models\RBAC\Role;
 use App\Models\User;
-use Spatie\Permission\PermissionRegistrar;
-
-function adminUser(): User
-{
-    $user = User::factory()->create();
-    $user->addRoleNames([UserRole::SUPER_ADMIN]);
-
-    app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-    return $user;
-}
-
-function externalUser(): User
-{
-    $user = User::factory()->create();
-    $user->addRoleNames([UserRole::EXTERNAL]);
-
-    app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-    return $user;
-}
 
 test('roles index is displayed for authorized user', function () {
     $this->actingAs(adminUser());

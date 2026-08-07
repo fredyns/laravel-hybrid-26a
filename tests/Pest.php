@@ -63,3 +63,23 @@ function apiPlainUser(): User
 
     return User::factory()->create();
 }
+
+function adminUser(): User
+{
+    $user = User::factory()->create();
+    $user->addRoleNames([UserRole::SUPER_ADMIN]);
+
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    return $user;
+}
+
+function externalUser(): User
+{
+    $user = User::factory()->create();
+    $user->addRoleNames([UserRole::EXTERNAL]);
+
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    return $user;
+}

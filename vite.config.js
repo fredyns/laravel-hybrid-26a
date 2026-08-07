@@ -1,9 +1,15 @@
+import { globSync } from 'node:fs';
 import {
     defineConfig
 } from 'vite';
-import laravel from 'laravel-vite-plugin';
+import laravel, { refreshPaths } from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
 import tailwindcss from "@tailwindcss/vite";
+
+// Colocated feature assets (see .ai/rules/Vertical-Slice-Architecture.md §13).
+// Requires Node >= 22 for fs.globSync.
+const featureAssets = globSync(['app/Features/**/script.js', 'app/Features/**/style.css'])
+    .map((path) => path.replaceAll('\\', '/'));
 
 export default defineConfig({
     plugins: [
@@ -12,8 +18,12 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/passkeys.js',
+                ...featureAssets,
             ],
-            refresh: true,
+            refresh: [
+                ...refreshPaths,
+                'app/Features/**',
+            ],
             fonts: [
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],

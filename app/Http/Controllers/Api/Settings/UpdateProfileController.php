@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Settings\UpdateProfileRequest;
-use App\Http\Resources\UserResource;
+use App\Features\User\UserResource;
 use Illuminate\Http\JsonResponse;
 
 class UpdateProfileController extends Controller
