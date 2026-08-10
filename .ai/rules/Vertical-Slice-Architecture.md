@@ -132,34 +132,41 @@ Not every page must be Livewire. A page with no interactivity is cheaper and sim
 
 ## 8. Livewire components are adapters
 
-A Livewire component handles UI concerns only: bind input, validate, call the use case, redirect/render. Business logic lives in the action.
+A Livewire component handles UI concerns only: bind input, authorize, validate, call the use case, give feedback, redirect/render. Business logic lives in the action.
 
 ```php
 namespace App\Features\Order\Create;
 
 use Livewire\Component;
 
+#[Title('Create order')]
 class CreateOrderPage extends Component
 {
+    use AuthorizesRequests;
+
     public string $reference = '';
 
-    public function save(CreateOrder $action)
+    public function save(CreateOrder $action): void
     {
+        $this->authorize('orders.create');
+
         $validated = $this->validate(CreateOrderRequest::rulesFor());
 
         $order = $action->execute($validated);
 
-        return $this->redirectRoute('orders.show', $order);
+        Flux::toast(variant: 'success', text: __('Order created.'));
+
+        $this->redirectRoute('orders.show', $order);
     }
 
-    public function render()
+    public function render(): View
     {
         return view('features::Order.Create.create-order-page');
     }
 }
 ```
 
-Conventions (verified against Livewire 4.1 in `vendor/`):
+Conventions (verified against Livewire 4.3 in `vendor/`):
 
 - **Full-page components need no registration.** Route them by class in the slice's `web-routes.php`:
 
@@ -169,10 +176,39 @@ Conventions (verified against Livewire 4.1 in `vendor/`):
       ->name('orders.create');
   ```
 
-  The default layout is `layouts::app` (`config('livewire.component_layout')`); override per component with `#[Layout]` when needed.
+  The default layout is `layouts::app` (`config('livewire.component_layout')`); override per component with `#[Layout]`, and set the page title with `#[Title]`.
 - **Embedded components** (`<livewire:...>` inside another view) resolve through the `features::` component namespace registered by `FeatureServiceProvider` (rule 29). The name maps dot-segments to StudlyCase classes: `<livewire:features::order.create.create-order-form />` → `App\Features\Order\Create\CreateOrderForm`.
 - Components stay **class-based** inside Features (official Livewire option for "established conventions around class-based architecture"). Views are colocated and rendered via the `features::` **view** namespace (rule 12).
 - `$this->dispatch()` browser/Livewire events are **UI signals** (toast, refresh, close-modal). They are not domain events and never carry cross-feature business meaning — that is rule 23's job.
+
+### Livewire state is client input
+
+Public properties and action parameters live in the browser and are mutable there. Treat both as request input, exactly like a controller:
+
+- **Authorize inside every state-changing action** (`$this->authorize('orders.update')`, or a per-model check), even when the route has `can:` middleware. Route middleware does re-apply to subsequent component requests (Livewire's persistent middleware includes `Authenticate`, `Authorize`, `SubstituteBindings`), but it cannot cover per-record decisions made from client-mutable state.
+- **Identity is tamper-proof only when typed or locked.** Bind records as model-typed properties (`public Order $order` — Livewire locks the key) or lock plain IDs with `#[Locked]`. Never trust a bare `public $orderId`.
+- **Whitelist user-selectable values.** Anything used to build queries (sort column, direction, per-page, filters) is checked against a known map before use — see `IndexUsersPage::sortBy()`.
+- **Every public method is a client-invokable endpoint.** Only intended actions are public; helpers stay `private`/`protected`.
+- **Public properties are serialized to the browser.** Never put secrets in them, and never store Eloquent collections/query results — query in `render()` (or `#[Computed]`); query constraints are not preserved between requests.
+
+### Index-page state
+
+List pages keep their UI state in `#[Url]` properties so URLs are shareable, back/forward works, and plain HTTP tests can exercise the page (`route('users.index', ['q' => 'jane'])`):
+
+- `#[Url(as: 'q')] public string $search = ''`, plus `sort`, `direction`, `#[Url(as: 'per_page')] $perPage`.
+- Use `WithPagination`; call `$this->resetPage()` in `updatedSearch()` / `updatedPerPage()` and when the sort changes.
+
+### Feature views
+
+- Forms: `wire:submit="save"` with `wire:model` bindings. `wire:model` is deferred by default — use `.live.debounce.300ms` only for reactive state like search inputs.
+- `<flux:input wire:model="name">` renders its own validation errors — no `@error` blocks.
+- Every `@foreach` row gets a `wire:key`.
+- Livewire disables the submit button and marks inputs readonly while a form submits; add `wire:loading` affordances only where the wait is noticeable.
+- In-app links use `wire:navigate` (the layouts already do), so full-page Livewire pages swap without a full reload.
+
+### Livewire 4 performance features
+
+Islands (`@island`), async actions (`wire:click.async`, `#[Async]`), and `lazy`/`defer` component loading are page-level optimizations — opt in when a slice page measurably needs them. They never change slice boundaries and are never a reason to move logic out of the use case.
 
 ## 9. Keep controllers thin
 
@@ -232,6 +268,7 @@ class UpdateOrderRequest extends FormRequest
 - API adapters use the FormRequest normally (`$request->validated()`).
 - Livewire components consume the same source: `$this->validate(UpdateOrderRequest::rulesFor($this->order))`.
 - A slice with no API may keep rules directly on the Livewire component — introduce the static only when a second consumer appears.
+- Do not introduce `Livewire\Form` objects in slices: a Form object becomes a second rules source next to the FormRequest. Bind plain public properties on the component and validate through the FormRequest static.
 
 ## 12. Colocated views
 
@@ -527,6 +564,9 @@ tests/Feature/Order/CreateTest.php
 
 - Web and API cases for the same slice live in the **same file** — both transports exercise one use case.
 - Livewire pages are tested with `Livewire::test(CreateOrderPage::class)` **plus** one plain HTTP smoke assertion (`$this->get(route('orders.create'))->assertOk()`) so routing and middleware stay covered.
+- Cover authorization on both transports: the page asserts `assertForbidden()` without permission, the API asserts `assertUnauthorized()` (guest) and `assertForbidden()` (no permission).
+- `#[Url]` state makes list behavior testable over plain HTTP too: `$this->get(route('users.index', ['q' => 'jane']))->assertSee(...)`.
+- Each interactive slice includes at least one tampered-input case (unknown sort column ignored, unauthorized action rejected).
 - Shared Pest helpers live in `tests/Pest.php`, never duplicated across test files.
 - Use model factories; `RefreshDatabase` applies to everything under `tests/Feature`.
 
@@ -549,11 +589,12 @@ Before creating or moving code, determine:
 1. Which Feature owns the behavior, and which use case performs it?
 2. Is the file business logic, a shared feature component, or a thin adapter?
 3. Which adapter fits (rule 7) — and is the Livewire component/controller staying thin?
-4. Is the component used by one slice, multiple slices in one Feature, or multiple Features?
-5. Does cross-feature communication require a domain event (not a Livewire `dispatch()`)?
-6. Does the new file need registration (routes, embedded Livewire name, command, schedule, listener) or does it resolve automatically?
-7. Could ordering, transaction timing, queue retries, or idempotency affect correctness?
-8. Are validation rules declared exactly once for the slice (rule 11)?
+4. For a Livewire slice: is all client-mutable state treated as untrusted input — authorized in the action, identity model-typed or `#[Locked]`, user-selectable values whitelisted (rule 8)?
+5. Is the component used by one slice, multiple slices in one Feature, or multiple Features?
+6. Does cross-feature communication require a domain event (not a Livewire `dispatch()`)?
+7. Does the new file need registration (routes, embedded Livewire name, command, schedule, listener) or does it resolve automatically?
+8. Could ordering, transaction timing, queue retries, or idempotency affect correctness?
+9. Are validation rules declared exactly once for the slice (rule 11)?
 
 Preserve existing project conventions when they are more specific than this document. If a requested change conflicts with these rules, explain the conflict and choose the smallest safe deviation unless the user directs otherwise.
 
