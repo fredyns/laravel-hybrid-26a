@@ -9,6 +9,10 @@ use Livewire\Livewire;
 use Symfony\Component\Finder\Finder;
 
 /**
+ * todo: move to app/features
+ */
+
+/**
  * The single bridge between Laravel and app/Features.
  *
  * Discovers colocated registration files recursively and registers the
