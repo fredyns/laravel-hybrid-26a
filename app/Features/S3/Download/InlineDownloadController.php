@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\S3\Download;
+namespace App\Features\S3\Download;
 
-use App\Http\Controllers\S3\BaseS3Controller;
+use App\Features\S3\BaseS3Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;

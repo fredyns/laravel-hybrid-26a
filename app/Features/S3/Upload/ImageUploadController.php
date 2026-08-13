@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\S3\Upload;
+namespace App\Features\S3\Upload;
 
+use App\Features\S3\BaseS3Controller;
 use App\Helpers\ImageOptimizer;
 use App\Helpers\S3;
-use App\Http\Controllers\S3\BaseS3Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

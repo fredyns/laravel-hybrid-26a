@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\S3\Download\InlineDownloadController;
-use App\Http\Controllers\S3\Download\ForceDownloadController;
-use App\Http\Controllers\S3\Upload\DocumentUploadController;
-use App\Http\Controllers\S3\Upload\ImageUploadController;
+use App\Features\S3\Download\ForceDownloadController;
+use App\Features\S3\Download\InlineDownloadController;
+use App\Features\S3\Upload\DocumentUploadController;
+use App\Features\S3\Upload\ImageUploadController;
 use Illuminate\Support\Facades\Route;
 
 // S3 Download actions, available for public
@@ -23,7 +23,7 @@ Route::prefix('s3/download')
 // S3 Upload actions, available for authenticated users only
 Route::prefix('s3/upload')
     ->name('s3.upload.')
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth:sanctum', 'verified'])
     ->group(function () {
         Route::post('docs', DocumentUploadController::class)->name('docs');
         Route::post('image', ImageUploadController::class)->name('image');

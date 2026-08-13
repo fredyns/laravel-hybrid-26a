@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\S3;
+namespace App\Features\S3;
 
 use App\Http\Controllers\Controller;
 use App\Services\S3Service;
