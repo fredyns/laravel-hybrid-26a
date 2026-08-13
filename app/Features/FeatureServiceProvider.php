@@ -1,16 +1,12 @@
 <?php
 
-namespace App\Providers;
+namespace App\Features;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Symfony\Component\Finder\Finder;
-
-/**
- * todo: move to app/features
- */
 
 /**
  * The single bridge between Laravel and app/Features.

@@ -1,7 +1,7 @@
 <?php
 
+use App\Features\FeatureServiceProvider;
 use App\Providers\AppServiceProvider;
-use App\Providers\FeatureServiceProvider;
 use App\Providers\FortifyServiceProvider;
 
 return [
