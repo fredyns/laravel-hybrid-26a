@@ -1,13 +1,16 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Features\Rbac\MyAccess;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 
-class MyAccessController extends Controller
+class MyAccessWebController
 {
+    /**
+     * The roles and permissions of the authenticated user.
+     */
     public function __invoke(Request $request): View
     {
         $user = $request->user();
@@ -19,6 +22,6 @@ class MyAccessController extends Controller
             ->sort()
             ->groupBy(fn (string $name) => Str::before($name, '.'));
 
-        return view('my-access', compact('user', 'roles', 'permissionGroups'));
+        return view('features::Rbac.MyAccess.view', compact('user', 'roles', 'permissionGroups'));
     }
 }

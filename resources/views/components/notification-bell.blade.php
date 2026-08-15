@@ -4,8 +4,24 @@
 @endphp
 
 <flux:dropdown position="bottom" align="end">
-    <flux:button variant="subtle" size="sm" square aria-label="{{ __('Notifications') }}" class="relative">
+    <flux:button
+        variant="subtle"
+        size="sm"
+        square
+        aria-label="{{ $unreadCount > 0 ? __(':count unread notifications', ['count' => $unreadCount]) : __('Notifications') }}"
+        class="relative"
+    >
         <flux:icon.bell variant="mini" />
+
+        @if ($unreadCount > 0)
+            {{-- Count lives in the button's aria-label, so the badge itself is decorative. --}}
+            <span
+                aria-hidden="true"
+                class="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white"
+            >
+                {{ $unreadCount > 9 ? '9+' : $unreadCount }}
+            </span>
+        @endif
     </flux:button>
 
     <flux:menu class="w-80">
