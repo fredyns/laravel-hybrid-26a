@@ -1,144 +1,88 @@
 # Laravel Vertical-Slice Architecture Rules
 
-This project uses a **feature-oriented / vertical-slice architecture** under `app/Features`, with **Livewire 4 + Flux UI** as the blessed UI stack.
+Feature-oriented / vertical-slice architecture under `app/Features`, with **Livewire 4 + Flux UI** as the blessed UI stack. Goal: keep all code for one business use case together instead of splitting it across technical layers.
 
-The main goal: keep all code related to a business use case close together, instead of organizing primarily by technical layers (global `Controllers`, `Services`, `Policies`, `Requests`, `Jobs`, `Listeners` directories).
-
-Core principles (details in the numbered rules):
+Core principles:
 
 > **Code that changes together lives together.**
-
 > **Organize by business capability and use case, not by technical layer.**
-
-> **Every entry point — Livewire component, HTTP controller, CLI command, queue job, schedule, webhook, event listener — is a thin adapter into a use case, never the business logic itself.**
-
-> **Use direct calls inside a Feature; use Laravel Events between top-level Features.**
-
-> **Keep use-case-specific code local. Promote shared code only when reuse is real.**
-
-These rules are for both developers and AI coding assistants working in this codebase.
+> **Every entry point — Livewire component, controller, command, job, schedule, webhook, listener — is a thin adapter into a use case, never the business logic.**
+> **Direct calls inside a Feature; Laravel Events between Features.**
+> **Keep use-case code local; promote shared code only when reuse is real.**
 
 ## 1. Status and scope
 
-- This document describes the **target architecture**, adopted incrementally. The pilot is **implemented**: the **User** feature (web + API + purge schedule) and the **Notification** consumer feature live under `app/Features/`, wired through `app/Providers/FeatureServiceProvider.php`.
-- Until an area is migrated, its existing code under `app/Http`, `app/Livewire`, `app/Actions`, `app/Services` **remains valid** — follow the local conventions there. Do not mass-migrate. Still unmigrated: Roles, Notifications page/API, Settings, Auth, S3, Ajax.
+- Adopted incrementally. **Migrated:** `User` (web + API + purge schedule), `Notification`, `S3`. **Not yet migrated:** Roles, Notifications page/API, Settings, Auth, Ajax, MyAccess.
+- Unmigrated code under `app/Http`, `app/Livewire`, `app/Actions`, `app/Services` **stays valid** — follow local conventions there. Do not mass-migrate.
 - **New features go under `app/Features`** following these rules.
-- Existing Livewire settings pages (`app/Livewire/Pages/Settings/*`) stay where they are until a Settings feature migration is planned.
+- The bridge is `app/Features/FeatureServiceProvider.php` (see §9), registered in `bootstrap/providers.php`.
 
 ## 2. UI stack
 
-- **Livewire 4** renders interactive pages and forms. Inside Features, use **class-based components** (rule 8). SFC/MFC formats (`⚡` components under `resources/views`) remain fine for shared, non-feature UI.
-- **Flux UI** (including Flux Pro) is the component library — use `<flux:*>` components in feature views. This kit is personally licensed; `composer.fluxui.dev` credentials are a prerequisite for `composer install`. Local Flux overrides live in `resources/views/flux/`.
-- **Alpine.js** ships with Livewire — use it for purely client-side behavior instead of custom JS where possible.
-- Tailwind v4 (CSS-first config in `resources/css/app.css`), Vite, Echo/Reverb for realtime.
+- **Livewire 4** for interactive pages/forms; inside Features use **class-based components** (§4). SFC/MFC (`⚡` under `resources/views`) is fine for shared non-feature UI.
+- **Flux UI** (incl. Pro) is the component library — `<flux:*>` in feature views. Personally licensed: `composer.fluxui.dev` credentials required for `composer install`. Overrides in `resources/views/flux/`.
+- **Alpine.js** (ships with Livewire) for client-only behavior. Tailwind v4 (CSS-first in `resources/css/app.css`), Vite, Echo/Reverb.
 - Do not introduce Inertia, React, Vue, or Volt.
 
-## 3. Organize code by feature and use case
+## 3. Structure and naming
 
-```text
-app/
-└── Features/
-    └── Order/
-        ├── Index/
-        ├── Create/
-        ├── Update/
-        ├── Approve/
-        └── ...
-```
-
-Top-level folders (`Order`, `Invoice`, `Customer`) represent a business capability, domain boundary, or resource area.
-
-Subfolders (`Create`, `Update`, `Approve`, `Cancel`, `Import`, `Sync`) represent individual use cases — vertical slices.
-
-Do not introduce extra architecture layers (`Modules/`, `Domains/`, `Application/`, `Infrastructure/`) unless a concrete need emerges.
-
-## 4. Colocate use-case-specific components
-
-Any component used exclusively by one use case lives inside that use-case folder:
+Top-level folder = business capability (`Order`, `Invoice`). Subfolder = one use case / vertical slice (`Create`, `Approve`, `Import`). Everything used by exactly one slice lives in that slice folder:
 
 ```text
 app/Features/Order/Create/
-├── CreateOrderPage.php          // Livewire full-page component (web UI adapter)
-├── create-order-page.blade.php  // its view (Flux components)
+├── CreateOrderPage.php          // Livewire page (web adapter)
+├── create-order-page.blade.php  // its view (Flux)
 ├── CreateOrderApiController.php // API adapter
-├── CreateOrderRequest.php       // validation (single source, see rule 11)
+├── CreateOrderRequest.php       // validation, single source (§5)
 ├── CreateOrder.php              // the use case — business logic
-├── script.js                    // optional page JS (rule 13)
-└── style.css                    // optional page CSS (rule 13)
+├── script.js / style.css        // optional (§6)
 ```
 
-Do not create technical subdirectories (`Controllers/`, `Services/`, `Requests/`, `Policies/`, `Jobs/`, `Listeners/`) inside a feature unless file count makes grouping genuinely useful. Prefer a flat use-case folder while it remains easy to scan.
-
-## 5. Organize by use case, not transport
-
-The directory structure describes **what the application does**, not how the action is triggered.
-
-Prefer:
-
-```text
-Order/
-├── Create/
-├── Approve/
-├── Expire/
-├── Import/
-└── SyncMarketplace/
-```
-
-Avoid transport-centric structures:
-
-```text
-Order/
-├── Http/
-├── Livewire/
-├── Jobs/
-├── Commands/
-└── Webhooks/
-```
-
-Livewire, HTTP, Queue, CLI, Schedule, Event, and Webhook are entry points into a use case — not the architectural boundary.
-
-## 6. Naming
-
-Class names are descriptive and business-oriented. Never use generic per-slice names (`Request.php`, `Policy.php`, `Service.php`, `Manager.php`, `Helper.php`) — with dozens of slices they make fuzzy-find, logs, and stack traces ambiguous.
+- **No extra layers** (`Modules/`, `Domains/`, `Application/`, `Infrastructure/`) and **no technical subfolders** inside a feature (`Controllers/`, `Services/`, `Requests/`, `Jobs/`) unless file count truly demands grouping. Keep slice folders flat.
+- **Structure by use case, not transport.** `Order/Approve/`, never `Order/Http/`, `Order/Jobs/`.
+- **Do not mirror URLs.** `/orders/{order}/approve` → `Order/Approve/`; `/admin/orders/...` needs no `Admin/` feature if the use case is still `Order/Approve`.
+- **Names are business-oriented**, never generic (`Request.php`, `Service.php`, `Helper.php` — ambiguous across dozens of slices):
 
 | Role | Pattern | Example |
 |---|---|---|
 | Use case (action) | `<Verb><Model>` | `CreateOrder`, `ExpireOrders` |
-| Livewire full-page component | `<Verb/Noun><Model>Page` | `CreateOrderPage`, `IndexOrdersPage` |
-| Livewire embedded component | descriptive | `CreateOrderForm`, `OrderStatusBadge` |
+| Livewire full-page component | `<Verb/Noun><Model>Page` | `CreateOrderPage` |
+| Livewire embedded component | descriptive | `CreateOrderForm` |
 | Web controller (static page) | `<Verb><Model>WebController` | `ShowOrderWebController` |
 | API controller | `<Verb><Model>ApiController` | `CreateOrderApiController` |
 | Form request | `<Verb><Model>Request` | `CreateOrderRequest` |
-| Job | `<Verb><Model>Job` | `ImportOrdersJob` |
-| Command | `<Verb><Model>Command` | `ExpireOrdersCommand` |
-| Event | past-tense fact | `OrderCreated` |
-| Listener | `<Event>Listener` | `OrderCreatedListener` |
+| Job / Command | `<Verb><Model>Job` / `Command` | `ImportOrdersJob` |
+| Event / Listener | past-tense fact / `<Event>Listener` | `OrderCreated`, `OrderCreatedListener` |
 
-Fixed filenames (never renamed): `view.blade.php` (single-view controller slice), `script.js`, `style.css`, and the registration files of rule 29. Livewire component views are named after their component in kebab-case (`create-order-page.blade.php`).
+Fixed filenames: `view.blade.php` (controller-rendered slice), `script.js`, `style.css`, and the registration files of §9. Livewire views are kebab-case of their component (`create-order-page.blade.php`).
 
-## 7. Choose the right adapter
+## 4. Adapters
 
 | Situation | Adapter |
 |---|---|
-| Interactive page (forms, live search/sort, modals) | Livewire full-page component via `Route::livewire()` |
-| Static read-only page | Plain controller + Blade view |
-| Machine consumer / SPA / integration | API controller + FormRequest + Resource |
-| Slow, retryable, background work | Queue Job delegating to the use case |
-| Time-driven work | Command + `schedules.php` entry |
-| Third-party callback | Webhook controller (HTTP adapter) |
-| Reaction to another Feature's fact | Event Listener |
+| Interactive page (forms, live search/sort, modals) | Livewire page via `Route::livewire()` |
+| Static read-only page | Controller + Blade view |
+| Machine consumer / integration | API controller + FormRequest + Resource |
+| Slow, retryable, background work | Queue Job → use case |
+| Time-driven work | Command + `schedules.php` |
+| Third-party callback | Webhook controller (register in `api-routes.php`) |
+| Reaction to another Feature's fact | Event Listener (§8) |
 
-Not every page must be Livewire. A page with no interactivity is cheaper and simpler as controller + Blade.
-
-## 8. Livewire components are adapters
-
-A Livewire component handles UI concerns only: bind input, authorize, validate, call the use case, give feedback, redirect/render. Business logic lives in the action.
+All adapters stay thin: bind/receive input, authorize, validate, call the use case, respond. Web and API adapters for the same operation **call the same action** — never duplicate business logic. Feature controllers are plain invokable classes (add `AuthorizesRequests` when needed); they do not extend `App\Http\Controllers\Controller`. Jobs/Commands keep a one-line `handle()` delegating to the action and live beside it.
 
 ```php
-namespace App\Features\Order\Create;
+class CreateOrderApiController
+{
+    public function __invoke(CreateOrderRequest $request, CreateOrder $action): JsonResponse
+    {
+        return response()->json(['order' => OrderResource::make($action->execute($request->validated()))], 201);
+    }
+}
+```
 
-use Livewire\Component;
+### Livewire components (verified against Livewire 4.3)
 
+```php
 #[Title('Create order')]
 class CreateOrderPage extends Component
 {
@@ -149,13 +93,10 @@ class CreateOrderPage extends Component
     public function save(CreateOrder $action): void
     {
         $this->authorize('orders.create');
-
         $validated = $this->validate(CreateOrderRequest::rulesFor());
-
         $order = $action->execute($validated);
 
         Flux::toast(variant: 'success', text: __('Order created.'));
-
         $this->redirectRoute('orders.show', $order);
     }
 
@@ -166,489 +107,160 @@ class CreateOrderPage extends Component
 }
 ```
 
-Conventions (verified against Livewire 4.3 in `vendor/`):
+- **Full-page components need no registration** — route by class: `Route::livewire('orders/create', CreateOrderPage::class)->middleware('can:orders.create')->name('orders.create')`. Default layout `layouts::app`; override with `#[Layout]`, set title with `#[Title]`.
+- **Embedded components** resolve via the `features::` Livewire namespace (§9): `<livewire:features::order.create.create-order-form />` → `App\Features\Order\Create\CreateOrderForm`.
+- `$this->dispatch()` events are **UI signals** (toast, refresh, close-modal) — never cross-feature business meaning (that is §8).
 
-- **Full-page components need no registration.** Route them by class in the slice's `web-routes.php`:
+**Livewire state is client input** — public properties and action arguments are browser-mutable; treat them exactly like request input:
 
-  ```php
-  Route::livewire('orders/create', CreateOrderPage::class)
-      ->middleware('can:orders.create')
-      ->name('orders.create');
-  ```
+- **Authorize inside every state-changing action**, even with `can:` route middleware (middleware re-applies on component requests, but cannot cover per-record decisions from mutable state).
+- **Identity must be typed or locked:** `public Order $order` (Livewire locks the key) or `#[Locked]` on plain IDs. Never trust a bare `public $orderId`.
+- **Whitelist user-selectable values** used to build queries (sort column, direction, per-page, filters) — see `IndexUsersPage::sortBy()`.
+- **Every public method is a client-invokable endpoint** — helpers stay `private`/`protected`.
+- **Public properties serialize to the browser** — no secrets, no Eloquent collections/query results; query in `render()` or `#[Computed]`.
 
-  The default layout is `layouts::app` (`config('livewire.component_layout')`); override per component with `#[Layout]`, and set the page title with `#[Title]`.
-- **Embedded components** (`<livewire:...>` inside another view) resolve through the `features::` component namespace registered by `FeatureServiceProvider` (rule 29). The name maps dot-segments to StudlyCase classes: `<livewire:features::order.create.create-order-form />` → `App\Features\Order\Create\CreateOrderForm`.
-- Components stay **class-based** inside Features (official Livewire option for "established conventions around class-based architecture"). Views are colocated and rendered via the `features::` **view** namespace (rule 12).
-- `$this->dispatch()` browser/Livewire events are **UI signals** (toast, refresh, close-modal). They are not domain events and never carry cross-feature business meaning — that is rule 23's job.
+**Index pages** keep UI state in `#[Url]` properties (`#[Url(as: 'q')] $search`, `sort`, `direction`, `#[Url(as: 'per_page')] $perPage`) so URLs are shareable and plain HTTP tests work. Use `WithPagination` and `resetPage()` on search/per-page/sort changes.
 
-### Livewire state is client input
+**Feature views:** `wire:submit="save"` + `wire:model` (deferred by default; `.live.debounce.300ms` only for reactive state like search). `<flux:input wire:model>` renders its own errors — no `@error` blocks. Every `@foreach` row gets `wire:key`. In-app links use `wire:navigate`. Livewire already disables submit buttons while submitting — add `wire:loading` only where the wait is noticeable.
 
-Public properties and action parameters live in the browser and are mutable there. Treat both as request input, exactly like a controller:
+**Performance features** (`@island`, `wire:click.async`/`#[Async]`, `lazy`/`defer`) are page-level opt-ins when measurably needed; they never change slice boundaries or move logic out of the use case.
 
-- **Authorize inside every state-changing action** (`$this->authorize('orders.update')`, or a per-model check), even when the route has `can:` middleware. Route middleware does re-apply to subsequent component requests (Livewire's persistent middleware includes `Authenticate`, `Authorize`, `SubstituteBindings`), but it cannot cover per-record decisions made from client-mutable state.
-- **Identity is tamper-proof only when typed or locked.** Bind records as model-typed properties (`public Order $order` — Livewire locks the key) or lock plain IDs with `#[Locked]`. Never trust a bare `public $orderId`.
-- **Whitelist user-selectable values.** Anything used to build queries (sort column, direction, per-page, filters) is checked against a known map before use — see `IndexUsersPage::sortBy()`.
-- **Every public method is a client-invokable endpoint.** Only intended actions are public; helpers stay `private`/`protected`.
-- **Public properties are serialized to the browser.** Never put secrets in them, and never store Eloquent collections/query results — query in `render()` (or `#[Computed]`); query constraints are not preserved between requests.
+## 5. One validation source per slice
 
-### Index-page state
-
-List pages keep their UI state in `#[Url]` properties so URLs are shareable, back/forward works, and plain HTTP tests can exercise the page (`route('users.index', ['q' => 'jane'])`):
-
-- `#[Url(as: 'q')] public string $search = ''`, plus `sort`, `direction`, `#[Url(as: 'per_page')] $perPage`.
-- Use `WithPagination`; call `$this->resetPage()` in `updatedSearch()` / `updatedPerPage()` and when the sort changes.
-
-### Feature views
-
-- Forms: `wire:submit="save"` with `wire:model` bindings. `wire:model` is deferred by default — use `.live.debounce.300ms` only for reactive state like search inputs.
-- `<flux:input wire:model="name">` renders its own validation errors — no `@error` blocks.
-- Every `@foreach` row gets a `wire:key`.
-- Livewire disables the submit button and marks inputs readonly while a form submits; add `wire:loading` affordances only where the wait is noticeable.
-- In-app links use `wire:navigate` (the layouts already do), so full-page Livewire pages swap without a full reload.
-
-### Livewire 4 performance features
-
-Islands (`@island`), async actions (`wire:click.async`, `#[Async]`), and `lazy`/`defer` component loading are page-level optimizations — opt in when a slice page measurably needs them. They never change slice boundaries and are never a reason to move logic out of the use case.
-
-## 9. Keep controllers thin
-
-Controllers (web and API) only handle HTTP concerns: receive the request, obtain validated input, invoke the use case, return a response.
-
-```php
-class CreateOrderApiController
-{
-    public function __invoke(CreateOrderRequest $request, CreateOrder $action): JsonResponse
-    {
-        $order = $action->execute($request->validated());
-
-        return response()->json([
-            'message' => 'Order created',
-            'order' => OrderResource::make($order),
-        ], 201);
-    }
-}
-```
-
-Feature controllers are plain invokable classes (add the `AuthorizesRequests` trait when needed) — they do not extend `App\Http\Controllers\Controller`.
-
-## 10. Web and API entry points share the same use case
-
-If the Livewire page and the API perform the same business operation, both call the same action:
-
-```text
-CreateOrderPage ──┐
-                  ├── CreateOrder
-CreateOrderApiController ──┘
-```
-
-Never duplicate business logic between adapters.
-
-## 11. One validation source per slice
-
-Validation rules are declared **once** per use case, as a static method on the slice's FormRequest, with context passed explicitly (never via `$this->route()` inside the static):
+Rules are declared **once**, as a static on the slice's FormRequest, with context passed explicitly (never `$this->route()` inside the static):
 
 ```php
 class UpdateOrderRequest extends FormRequest
 {
-    public function rules(): array
-    {
-        return self::rulesFor($this->route('order'));
-    }
+    public function rules(): array { return self::rulesFor($this->route('order')); }
 
     /** @return array<string, array<int, mixed>> */
     public static function rulesFor(?Order $order = null): array
     {
-        return [
-            'reference' => ['required', 'string', Rule::unique('orders')->ignore($order)],
-        ];
+        return ['reference' => ['required', 'string', Rule::unique('orders')->ignore($order)]];
     }
 }
 ```
 
-- API adapters use the FormRequest normally (`$request->validated()`).
-- Livewire components consume the same source: `$this->validate(UpdateOrderRequest::rulesFor($this->order))`.
-- A slice with no API may keep rules directly on the Livewire component — introduce the static only when a second consumer appears.
-- Do not introduce `Livewire\Form` objects in slices: a Form object becomes a second rules source next to the FormRequest. Bind plain public properties on the component and validate through the FormRequest static.
+API uses `$request->validated()`; Livewire uses `$this->validate(UpdateOrderRequest::rulesFor($this->order))`. A slice with no API may keep rules on the component until a second consumer appears. **Do not use `Livewire\Form` objects** — they become a second rules source.
 
-## 12. Colocated views
+## 6. Views and assets
 
-`FeatureServiceProvider` registers `app/Features` as the `features::` **view namespace**. Dots map to directories:
+- `FeatureServiceProvider` registers `app/Features` as the `features::` **view namespace**; dots map to directories: `view('features::Order.Create.create-order-page')`. Folder names must contain no dots; segments are PascalCase (case-sensitive on Linux). Layouts, shared Blade components, and Flux components stay global.
+- Note `features::` serves **two** registries: Blade views (PascalCase) and Livewire components (kebab-case).
+- A slice may own `script.js` / `style.css`, wired in three places: (1) `vite.config.js` globs them via `globSync(['app/Features/**/script.js', 'app/Features/**/style.css'])` into `input`, plus `'app/Features/**'` in `refresh`; (2) the view calls `@vite(['app/Features/Order/Index/style.css'])`; (3) `resources/css/app.css` contains `@source '../../app/Features';` — **without it production builds purge every class used only in feature views**.
+- Adding or renaming a slice asset requires `npm run build` (or a running dev server) before the page/tests resolve — the manifest is keyed by exact input path. Requires Node ≥ 22 (`fs.globSync`).
+- Prefer Livewire/Alpine over custom `script.js`.
 
-```php
-view('features::Order.Create.create-order-page')
-// → app/Features/Order/Create/create-order-page.blade.php
-```
+## 7. Sharing, dependencies, authorization
 
-Constraints:
+**Promotion:** used by one slice → keep it there; used by several slices of one Feature → move to the feature parent (`Order/CalculatePricing.php`, `Order/OrderResource.php`); used across Features → find the right shared business concept. Never dump into global `Services/`, `Helpers/`, `Utils/`, `Common/`. Never copy business logic between slices to preserve isolation.
 
-- Feature and slice folder names must never contain dots.
-- View names are case-sensitive on Linux — path segments are PascalCase exactly matching the folders.
-- Layouts (`<x-layouts::app>`), shared Blade components, and Flux components remain global and work unchanged from feature views.
+**Dependency direction:** adapter → use case → feature-local shared component → framework/model. Parent-level components must never import from a child slice.
 
-Note the distinction: `features::` is used by **two** registries — the Blade view namespace (`view('features::Order.Create...')`, PascalCase) and the Livewire component namespace (`<livewire:features::order.create...>`, kebab-case). Same word, different resolvers.
+**Authorization:** spatie permissions are the default — `can:orders.create` middleware and `$this->authorize('orders.create')` resolve without any `Gate::define`; permissions are seeded via `app/DB/Base*Migration`. `gates.php` exists only for **custom** abilities (e.g. model-state checks), defined in the owning slice. Blade keeps `@can('orders.update', $order)`.
 
-## 13. Colocated assets
+**Transactions:** wrap operations that must succeed or fail together. Dispatch cross-feature events only after state is valid; use after-commit behavior (`ShouldQueueAfterCommit`, `afterCommit()`) so a queued listener never sees uncommitted or rolled-back state.
 
-A slice may own page-level `script.js` / `style.css`. They are wired in three places:
+## 8. Cross-feature communication (Events)
 
-1. `vite.config.js` globs them as entries:
+A Feature must never import another Feature's internals (`use App\Features\Invoice\Create\CreateInvoice;` from inside `App\Features\Order\...` is forbidden). Publish a domain event instead — `OrderCreated::dispatch($order)` — and let the consumer listen. The producer never knows who consumes.
 
-   ```js
-   import { globSync } from 'node:fs';
+- **Events are facts, past tense:** `OrderCreated`, `PaymentReceived`. Never command-like (`CreateInvoice`, `SendEmail`).
+- **Ownership:** the Event lives at `<Feature>/Events/OrderCreated.php`; the Listener lives in the *consuming* Feature's use case, with its `events.php`.
+- **Sync vs queued:** sync when lightweight or needing immediate consistency; `ShouldQueue` when expensive, external, or fire-and-forget. Queued listeners serialize models — handle (or accept) model-deleted-before-processing. The choice never changes feature boundaries.
+- **Not for internal calls:** inside one Feature, direct calls are clearer (`CreateOrder → CalculatePricing → CheckCreditLimit`).
 
-   const featureAssets = globSync(['app/Features/**/script.js', 'app/Features/**/style.css'])
-       .map((p) => p.replaceAll('\\', '/'));
-   // laravel({ input: [...defaultEntries, ...featureAssets], refresh: [...refreshPaths, 'app/Features/**'], ... })
-   ```
+## 9. Registration and FeatureServiceProvider
 
-2. The view loads them: `@vite(['app/Features/Order/Index/style.css', 'app/Features/Order/Index/script.js'])`.
-3. `resources/css/app.css` must contain `@source '../../app/Features';` so Tailwind scans feature views — **without it, production builds purge every class used only in feature views.**
-
-Prefer Livewire/Alpine over custom `script.js`; reach for colocated assets only when a page genuinely needs bespoke JS/CSS.
-
-## 14. Promote shared components to the nearest common parent
-
-```text
-used by one slice
-→ keep it inside that slice
-
-used by multiple slices in the same feature
-→ move it to the feature parent (e.g. Order/CalculatePricing.php, Order/OrderResource.php)
-
-used across multiple top-level features
-→ identify the correct shared abstraction or business concept
-```
-
-Do not preemptively move reusable code into global dumping grounds (`Services/`, `Helpers/`, `Utils/`, `Common/`).
-
-## 15. Follow a clear dependency direction
-
-```text
-Adapter (Livewire component / controller / job / command / listener)
-        ↓
-     Use case (action)
-        ↓
-Feature-local shared component (Order/CalculatePricing.php)
-        ↓
-Framework / Model / shared infrastructure
-```
-
-Parent-level components must not depend on child slices:
-
-```text
-Avoid:  Order/CalculatePricing.php → Order/Create/*
-```
-
-A parent-level shared component stays reusable and never imports implementation details from a specific slice.
-
-## 16. Do not mirror URL paths literally
-
-Directories represent semantic use cases, not URL segments. For `/orders/{order}/approve` use `Order/Approve/`, not `Order/{order}/Approve/`. Likewise `/admin/orders/{order}/approve` does not require an `Admin/` feature if the business use case is still `Order/Approve`.
-
-## 17. Authorization
-
-- **Spatie permissions are the default story.** Route middleware `can:orders.create` and `$this->authorize('orders.create')` resolve through spatie/laravel-permission — permission-named abilities need **no** `Gate::define`. Permissions are seeded via the `app/DB/Base*Migration` classes.
-- `gates.php` (rule 29) exists only for **custom** abilities that are not plain permissions (e.g. model-state checks). Keep such a Gate's class/callback in the slice that owns it:
-
-  ```php
-  Gate::define('order.approve', [\App\Features\Order\Approve\ApproveOrderPolicy::class, 'authorize']);
-  ```
-
-- Blade keeps using the normal API: `@can('orders.create') ... @endcan`, `@can('orders.update', $order)`.
-
-## 18. Queue Jobs are adapters
-
-Jobs need no global registration — dispatch normally (`ImportOrdersJob::dispatch($payload)`), keep `handle()` thin, store the Job next to its use case:
-
-```text
-Order/Import/
-├── ImportOrders.php
-└── ImportOrdersJob.php
-```
-
-```php
-class ImportOrdersJob implements ShouldQueue
-{
-    public function handle(ImportOrders $action): void
-    {
-        $action->execute();
-    }
-}
-```
-
-## 19. Treat queues and schedules as triggers
-
-A queue job or scheduled task is usually not a separate business use case — it is an adapter invoking one:
-
-```text
-Scheduler → Job → ExpireOrders
-CLI Command ───→ ExpireOrders
-Livewire page ─→ ExpireOrders
-```
-
-Use jobs for slow, retryable, or background work. Use `withoutOverlapping()` / `onOneServer()` on schedules that require them.
-
-## 20. CLI Commands are adapters
-
-```php
-class ExpireOrdersCommand extends Command
-{
-    protected $signature = 'orders:expire {--days=30}';
-
-    public function handle(ExpireOrders $action): int
-    {
-        $action->execute((int) $this->option('days'));
-
-        return self::SUCCESS;
-    }
-}
-```
-
-Store the Command next to its use case and register it via the slice's `commands.php` (rule 29).
-
-## 21. Webhooks are HTTP adapters
-
-A webhook is an HTTP entry point. Store its controller next to the use case it triggers; register its route through the feature's `api-routes.php`:
-
-```text
-Order/SyncMarketplace/
-├── SyncMarketplaceWebhookController.php
-├── SyncMarketplaceRequest.php
-└── SyncMarketplace.php
-```
-
-## 22. Use transactions around the atomic business change
-
-Place persistence operations that must succeed or fail together inside a database transaction.
-
-Dispatch cross-feature events only after the originating state is valid. When an event must not be processed before the transaction commits, use Laravel's after-commit behavior (`ShouldQueueAfterCommit`, `afterCommit()`). A queued listener must never observe uncommitted or rolled-back state.
-
-## 23. Use Laravel Events for communication between top-level Features
-
-**A Feature must not depend on another Feature's internals to trigger cross-feature side effects.**
-
-Avoid:
-
-```php
-namespace App\Features\Order\Create;
-
-use App\Features\Invoice\Create\CreateInvoice; // ← direct coupling
-
-class CreateOrder
-{
-    public function __construct(private CreateInvoice $createInvoice) {}
-}
-```
-
-Instead, publish a domain event:
-
-```php
-OrderCreated::dispatch($order);
-```
-
-The consuming Feature listens:
-
-```text
-Order ──▶ OrderCreated event ◀── Invoice listener
-```
-
-The producer never knows which Features consume the event.
-
-## 24. Events represent facts that already happened
-
-Use domain language, past tense: `OrderCreated`, `OrderApproved`, `PaymentReceived`, `InvoiceIssued`.
-
-Never command-like names (`CreateInvoice`, `ProcessPayment`, `SendEmail`) — a command describes what should happen; an event describes what already did.
-
-## 25. Event and Listener ownership
-
-- The **Event** lives with the Feature that owns the fact, always at `<Feature>/Events/`:
-
-  ```text
-  Order/Events/OrderCreated.php
-  ```
-
-- The **Listener** lives in the Feature that reacts, inside its consuming use case:
-
-  ```text
-  Invoice/CreateFromOrder/
-  ├── OrderCreatedListener.php
-  ├── CreateInvoiceFromOrder.php
-  └── events.php
-  ```
-
-## 26. Avoid direct cross-feature implementation dependencies
-
-Code in one top-level Feature must not import internal classes of another (`use App\Features\Invoice\Create\CreateInvoice;` from inside `App\Features\Order\...` is forbidden).
-
-To react to another Feature's fact → use an Event. If multiple Features truly need the same business logic → extract a shared business concept; never make Features call each other directly.
-
-## 27. Event Listeners may be synchronous or queued
-
-Synchronous when the operation is lightweight, must complete in the same flow, or requires immediate consistency. Queued (`implements ShouldQueue`) when it is expensive, calls external APIs, sends mail/notifications, generates files, or need not finish before the response.
-
-The sync/queued choice never changes the Feature boundary. Note: a queued listener serializes its models; handle the model-deleted-before-processing case or accept the failure.
-
-## 28. Do not use Events for every internal call
-
-Events are for **cross-feature** communication and meaningful side effects. Inside one Feature, direct calls are clearer:
-
-```text
-Order/Create/CreateOrder → Order/CalculatePricing → Order/CheckCreditLimit
-```
-
-Do not replace explicit internal control flow with events.
-
-## 29. Registration files and FeatureServiceProvider
-
-One provider — `app/Providers/FeatureServiceProvider.php`, registered in `bootstrap/providers.php` — is the only bridge between Laravel and `app/Features`. No per-feature providers unless a concrete need appears. No business logic in the provider.
-
-Colocated registration files, discovered recursively (Symfony Finder, `sortByName()` for deterministic order), each with a strict contract:
+`app/Features/FeatureServiceProvider.php` is the only bridge between Laravel and `app/Features`. No per-feature providers, no business logic inside it. It discovers colocated registration files recursively (Symfony Finder, `sortByName()` for deterministic order):
 
 | File | Contract |
 |---|---|
-| `web-routes.php` | Route definitions; provider wraps the file in `Route::middleware('web')->group(...)` |
-| `api-routes.php` | Route definitions; provider wraps in `Route::middleware('api')->prefix('api')->group(...)` |
-| `gates.php` | `Gate::define(...)` calls (custom abilities only, rule 17) |
-| `events.php` | `Event::listen(EventClass::class, ListenerClass::class)` calls |
-| `commands.php` | **returns** `list<class-string>` of Command classes |
+| `web-routes.php` | routes; provider wraps in `Route::middleware('web')->group(...)` |
+| `api-routes.php` | routes; provider wraps in `Route::middleware('api')->prefix('api')->group(...)` |
+| `gates.php` | `Gate::define(...)` — custom abilities only (§7) |
+| `events.php` | `Event::listen(Event::class, Listener::class)` |
+| `commands.php` | **returns** `list<class-string>` of Commands |
 | `schedules.php` | `Schedule::command(...)` facade calls |
 
-Provider skeleton:
-
 ```php
-class FeatureServiceProvider extends ServiceProvider
+public function boot(): void
 {
-    public function boot(): void
-    {
-        $this->loadViewsFrom(app_path('Features'), 'features');
+    $this->loadViewsFrom(app_path('Features'), 'features');
+    Livewire::addNamespace('features', classNamespace: 'App\\Features', classPath: app_path('Features'));
 
-        Livewire::addNamespace(
-            namespace: 'features',
-            classNamespace: 'App\\Features',
-            classPath: app_path('Features'),
-        );
-
-        $this->registerRoutes();      // skips when $this->app->routesAreCached()
-        $this->requireAll('gates.php');
-        $this->requireAll('events.php');
-        $this->registerCommands();    // console only; merges the returned arrays into $this->commands()
-        $this->registerSchedules();   // console only; callAfterResolving(Schedule::class, ...)
-    }
+    $this->registerRoutes();      // skipped when routesAreCached()
+    $this->requireAll('gates.php');
+    $this->requireAll('events.php');
+    $this->registerCommands();    // console only; merges returned arrays into $this->commands()
+    $this->registerSchedules();   // console only; callAfterResolving(Schedule::class, ...)
 }
 ```
 
-Operational notes:
+- Route files contain **no closures**, so `route:cache` stays possible.
+- `event:cache` only affects auto-discovery; explicit `Event::listen` is unaffected.
+- Actions, calculators, mappers and other internal classes need **no registration** — the container resolves them by type-hint.
 
-- Route files contain **no closures** — class controllers / component classes only, so `route:cache` stays possible.
-- `event:cache` only affects auto-discovered listeners; explicit `Event::listen` in `events.php` is unaffected.
-- Discovery cost is a few sub-millisecond Finder scans; an optional `features:cache` command is a future optimization, not a current need.
+## 10. Tests mirror features
 
-## 30. Internal classes require no registration
+`tests/Feature/<Feature>/<UseCase>Test.php` (e.g. `tests/Feature/Order/CreateTest.php`).
 
-Actions, calculators, rules, mappers, and processors resolve through the container by type-hint — no binding, no registration:
+- Web and API cases for one slice live in the **same file**.
+- Livewire pages: `Livewire::test(CreateOrderPage::class)` **plus** one HTTP smoke assertion (`$this->get(route('orders.create'))->assertOk()`) so routing/middleware stay covered.
+- Cover authorization on both transports: page `assertForbidden()` without permission; API `assertUnauthorized()` (guest) and `assertForbidden()` (no permission).
+- `#[Url]` state makes list behavior testable over plain HTTP: `$this->get(route('users.index', ['q' => 'jane']))`.
+- Every interactive slice gets at least one tampered-input case (unknown sort column ignored, unauthorized action rejected).
+- Shared Pest helpers live in `tests/Pest.php`, never duplicated. Use factories; `RefreshDatabase` applies to `tests/Feature`.
 
-```php
-public function handle(ApproveOrder $action): void
-{
-    $action->execute();
-}
-```
+## 11. Restraint
 
-## 31. Tests mirror features
+- **No premature abstraction.** No interfaces, repositories, or managers to satisfy a pattern. Extract only for a concrete need: multiple implementations, real reuse, a real testing/integration boundary, or complexity already present. A one-statement use case may stay in its adapter — add the action class when logic exists.
+- **Keep Laravel primitives.** This architecture changes file ownership and locality, not the framework: Form Requests, Gates, Events, Queues, Scheduler, Eloquent, Middleware, Route Model Binding, Notifications, named routes, Livewire test utilities all stay.
 
-```text
-tests/Feature/<Feature>/<UseCase>Test.php
-tests/Feature/Order/CreateTest.php
-```
-
-- Web and API cases for the same slice live in the **same file** — both transports exercise one use case.
-- Livewire pages are tested with `Livewire::test(CreateOrderPage::class)` **plus** one plain HTTP smoke assertion (`$this->get(route('orders.create'))->assertOk()`) so routing and middleware stay covered.
-- Cover authorization on both transports: the page asserts `assertForbidden()` without permission, the API asserts `assertUnauthorized()` (guest) and `assertForbidden()` (no permission).
-- `#[Url]` state makes list behavior testable over plain HTTP too: `$this->get(route('users.index', ['q' => 'jane']))->assertSee(...)`.
-- Each interactive slice includes at least one tampered-input case (unknown sort column ignored, unauthorized action rejected).
-- Shared Pest helpers live in `tests/Pest.php`, never duplicated across test files.
-- Use model factories; `RefreshDatabase` applies to everything under `tests/Feature`.
-
-## 32. Avoid duplicated business logic
-
-Never copy business logic between slices to preserve isolation. Shared by multiple slices in one Feature → promote to the feature parent (rule 14).
-
-## 33. Do not introduce abstractions before they are needed
-
-No interfaces, repositories, managers, or extra layers to satisfy a pattern. Start with the simplest implementation that expresses the use case. Extract an abstraction only for a concrete need: multiple implementations, real reuse, a real testing or integration boundary, or complexity that has already emerged. A one-statement use case may stay in its adapter — introduce the action class when logic exists.
-
-## 34. Keep Laravel conventions where they remain useful
-
-Feature organization changes **file ownership and locality** — it does not replace framework primitives. Keep using Form Requests, Gates, Events, Listeners, Queues, Scheduler, Eloquent, Middleware, Service Container, Route Model Binding, Validation, Notifications, named routes + `route()`, and Livewire's own testing utilities.
-
-## 35. Rules for AI-generated changes
-
-Before creating or moving code, determine:
+## 12. Checklist for AI-generated changes
 
 1. Which Feature owns the behavior, and which use case performs it?
 2. Is the file business logic, a shared feature component, or a thin adapter?
-3. Which adapter fits (rule 7) — and is the Livewire component/controller staying thin?
-4. For a Livewire slice: is all client-mutable state treated as untrusted input — authorized in the action, identity model-typed or `#[Locked]`, user-selectable values whitelisted (rule 8)?
-5. Is the component used by one slice, multiple slices in one Feature, or multiple Features?
-6. Does cross-feature communication require a domain event (not a Livewire `dispatch()`)?
-7. Does the new file need registration (routes, embedded Livewire name, command, schedule, listener) or does it resolve automatically?
-8. Could ordering, transaction timing, queue retries, or idempotency affect correctness?
-9. Are validation rules declared exactly once for the slice (rule 11)?
+3. Which adapter fits (§4) — and is it staying thin?
+4. Livewire slice: is client-mutable state treated as untrusted — authorized in the action, identity typed/`#[Locked]`, selectable values whitelisted (§4)?
+5. Is the component used by one slice, several in one Feature, or several Features (§7)?
+6. Does cross-feature communication need a domain event, not a Livewire `dispatch()` (§8)?
+7. Does the new file need registration (route, embedded Livewire name, command, schedule, listener) or resolve automatically (§9)?
+8. Could ordering, transaction timing, queue retries, or idempotency affect correctness (§7)?
+9. Are validation rules declared exactly once (§5)?
 
-Preserve existing project conventions when they are more specific than this document. If a requested change conflicts with these rules, explain the conflict and choose the smallest safe deviation unless the user directs otherwise.
+Preserve project conventions that are more specific than this document. If a request conflicts with these rules, explain the conflict and choose the smallest safe deviation unless directed otherwise.
 
-## 36. Reference structure
+## 13. Reference structure
 
 ```text
 app/Features/
+├── FeatureServiceProvider.php       // the single bridge (§9)
 ├── Order/
-│   ├── Events/
-│   │   └── OrderCreated.php
-│   ├── OrderResource.php            // shared by Index/Show/Create/Update
+│   ├── Events/OrderCreated.php
+│   ├── OrderResource.php            // shared by several slices
 │   ├── CalculatePricing.php         // shared feature-local logic
-│   ├── web-routes.php
-│   ├── api-routes.php
-│   ├── gates.php                    // only if custom gates exist
+│   ├── web-routes.php / api-routes.php / gates.php
 │   ├── Index/
-│   │   ├── IndexOrdersPage.php      // Livewire page: search/sort/paginate
-│   │   ├── index-orders-page.blade.php
+│   │   ├── IndexOrdersPage.php + index-orders-page.blade.php
 │   │   ├── IndexOrdersApiController.php
-│   │   ├── script.js                // optional
-│   │   └── style.css                // optional
+│   │   └── script.js / style.css    // optional
 │   ├── Create/
-│   │   ├── CreateOrderPage.php
-│   │   ├── create-order-page.blade.php
+│   │   ├── CreateOrderPage.php + create-order-page.blade.php
 │   │   ├── CreateOrderApiController.php
 │   │   ├── CreateOrderRequest.php
 │   │   └── CreateOrder.php          // the use case
 │   ├── Show/
-│   │   ├── ShowOrderWebController.php   // static page: controller + Blade
-│   │   ├── view.blade.php
+│   │   ├── ShowOrderWebController.php + view.blade.php
 │   │   └── ShowOrderApiController.php
-│   ├── Approve/
-│   │   └── ApproveOrder.php
 │   └── Expire/
-│       ├── ExpireOrders.php
-│       ├── ExpireOrdersJob.php
-│       ├── ExpireOrdersCommand.php
-│       ├── commands.php
-│       └── schedules.php
-│
-└── Invoice/
-    └── CreateFromOrder/
-        ├── OrderCreatedListener.php
-        ├── CreateInvoiceFromOrder.php
-        └── events.php
+│       ├── ExpireOrders.php + ExpireOrdersJob.php + ExpireOrdersCommand.php
+│       └── commands.php / schedules.php
+└── Invoice/CreateFromOrder/
+    ├── OrderCreatedListener.php + CreateInvoiceFromOrder.php
+    └── events.php
 
-app/Providers/FeatureServiceProvider.php   // the single bridge (rule 29)
-
-tests/Feature/
-├── Order/
-│   ├── IndexTest.php
-│   ├── CreateTest.php
-│   ├── ShowTest.php
-│   └── ExpireTest.php
-└── Invoice/
-    └── CreateFromOrderTest.php
+tests/Feature/Order/{IndexTest,CreateTest,ShowTest,ExpireTest}.php
+tests/Feature/Invoice/CreateFromOrderTest.php
 ```
