@@ -12,7 +12,7 @@ Core principles:
 
 ## 1. Status and scope
 
-- Adopted incrementally. **Migrated:** `User` (web + API + purge schedule), `Notification`, `S3`, `Rbac` (Roles + Permissions, URLs under `/rbac`). **Not yet migrated:** Notifications page/API, Settings, Auth, Ajax, MyAccess.
+- Adopted incrementally. **Migrated:** `User` (web + API + purge schedule), `Notification` (page + API + cross-feature listener), `S3`, `Rbac` (Roles + Permissions, URLs under `/rbac`). **Not yet migrated:** Settings, Auth, Ajax, MyAccess.
 - A Feature may group related areas one level deeper when the domain calls for it (`Rbac/Roles/<UseCase>`, `Rbac/Permissions/<UseCase>`); registration files and shared components then live at the Feature root (`Rbac/web-routes.php`, `Rbac/RoleResource.php`).
 - Unmigrated code under `app/Http`, `app/Livewire`, `app/Actions`, `app/Services` **stays valid** — follow local conventions there. Do not mass-migrate.
 - **New features go under `app/Features`** following these rules.

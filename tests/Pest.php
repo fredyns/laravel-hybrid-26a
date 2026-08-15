@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Notifications\ResourceNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -82,4 +83,11 @@ function externalUser(): User
     app(PermissionRegistrar::class)->forgetCachedPermissions();
 
     return $user;
+}
+
+function notifyUser(User $user, string $title = 'Test notification'): string
+{
+    $user->notifyNow(new ResourceNotification($title, 'Body text', null, 'info'), ['database']);
+
+    return $user->notifications()->latest()->first()->id;
 }

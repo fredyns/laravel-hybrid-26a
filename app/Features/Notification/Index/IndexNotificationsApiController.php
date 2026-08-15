@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api\Notifications;
+namespace App\Features\Notification\Index;
 
-use App\Http\Controllers\Controller;
-use App\Http\Resources\NotificationResource;
+use App\Features\Notification\NotificationResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
-class IndexController extends Controller
+class IndexNotificationsApiController
 {
     /**
      * The authenticated user's notifications, newest first.

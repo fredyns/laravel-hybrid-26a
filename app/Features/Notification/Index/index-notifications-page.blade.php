@@ -1,5 +1,4 @@
-<x-layouts::app :title="__('Notifications')">
-    <div class="flex h-full w-full flex-1 flex-col gap-6">
+<div class="flex h-full w-full flex-1 flex-col gap-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
             <flux:heading size="xl">{{ __('Notifications') }}</flux:heading>
@@ -7,11 +6,9 @@
         </div>
 
         @if ($unreadCount > 0)
-            <span class="cursor-not-allowed opacity-50">
-                <flux:button variant="primary" icon="check">
-                    {{ __('Mark all read') }}
-                </flux:button>
-            </span>
+            <flux:button variant="primary" icon="check" wire:click="markAllRead" data-test="mark-all-read-button">
+                {{ __('Mark all read') }}
+            </flux:button>
         @endif
     </div>
 
@@ -25,7 +22,7 @@
 
         <flux:table.rows>
             @forelse ($notifications as $notification)
-                <flux:table.row :key="$notification->id">
+                <flux:table.row :key="$notification->id" wire:key="notification-{{ $notification->id }}">
                     <flux:table.cell>
                         @if ($notification->read_at)
                             <flux:badge size="sm" color="zinc" inset="top bottom">{{ __('Read') }}</flux:badge>
@@ -66,16 +63,25 @@
 
                             @unless ($notification->read_at)
                                 <flux:tooltip :content="__('Mark as read')">
-                                    <span class="cursor-not-allowed opacity-50">
-                                        <flux:button size="sm" variant="ghost" icon="check" :aria-label="__('Mark as read')" />
-                                    </span>
+                                    <flux:button
+                                        size="sm"
+                                        variant="ghost"
+                                        icon="check"
+                                        :aria-label="__('Mark as read')"
+                                        wire:click="markAsRead('{{ $notification->id }}')"
+                                    />
                                 </flux:tooltip>
                             @endunless
 
                             <flux:tooltip :content="__('Delete')">
-                                <span class="cursor-not-allowed opacity-50">
-                                    <flux:button size="sm" variant="ghost" icon="trash" :aria-label="__('Delete')" />
-                                </span>
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon="trash"
+                                    :aria-label="__('Delete')"
+                                    wire:click="delete('{{ $notification->id }}')"
+                                    wire:confirm="{{ __('Delete this notification?') }}"
+                                />
                             </flux:tooltip>
                         </div>
                     </flux:table.cell>
@@ -94,5 +100,4 @@
     </flux:table>
 
     {{ $notifications->links() }}
-    </div>
-</x-layouts::app>
+</div>
