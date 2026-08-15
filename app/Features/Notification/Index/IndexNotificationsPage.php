@@ -5,7 +5,9 @@ namespace App\Features\Notification\Index;
 use App\Features\Notification\Delete\DeleteNotification;
 use App\Features\Notification\MarkAllRead\MarkAllNotificationsRead;
 use App\Features\Notification\MarkRead\MarkNotificationRead;
+use App\Features\Notification\Simulate\SimulateNotification;
 use App\Models\User;
+use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
@@ -49,6 +51,18 @@ class IndexNotificationsPage extends Component
         $action->execute($this->user(), $notificationId);
 
         $this->dispatch('notification-received');
+    }
+
+    /**
+     * Demo button: create a notification without waiting for a real event.
+     */
+    public function simulate(SimulateNotification $action): void
+    {
+        $action->execute($this->user());
+
+        $this->resetPage();
+
+        Flux::toast(variant: 'success', text: __('Simulated notification created.'));
     }
 
     private function user(): User

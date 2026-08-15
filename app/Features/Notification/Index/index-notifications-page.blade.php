@@ -5,11 +5,17 @@
             <flux:subheading>{{ __('View and manage your notifications.') }}</flux:subheading>
         </div>
 
-        @if ($unreadCount > 0)
-            <flux:button variant="primary" icon="check" wire:click="markAllRead" data-test="mark-all-read-button">
-                {{ __('Mark all read') }}
+        <div class="flex items-center gap-2">
+            <flux:button icon="bell-alert" wire:click="simulate" data-test="simulate-notification-button">
+                {{ __('Simulate notification') }}
             </flux:button>
-        @endif
+
+            @if ($unreadCount > 0)
+                <flux:button variant="primary" icon="check" wire:click="markAllRead" data-test="mark-all-read-button">
+                    {{ __('Mark all read') }}
+                </flux:button>
+            @endif
+        </div>
     </div>
 
     <flux:table>
