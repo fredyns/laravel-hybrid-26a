@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Features\Rbac;
 
 use App\Models\RBAC\Role;
 use Illuminate\Http\Request;

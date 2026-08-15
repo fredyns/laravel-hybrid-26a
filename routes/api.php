@@ -8,12 +8,6 @@ use App\Http\Controllers\Api\Notifications\DestroyController as NotificationDest
 use App\Http\Controllers\Api\Notifications\IndexController as NotificationIndexController;
 use App\Http\Controllers\Api\Notifications\MarkAllReadController;
 use App\Http\Controllers\Api\Notifications\MarkReadController;
-use App\Http\Controllers\Api\Roles\DestroyController as RoleDestroyController;
-use App\Http\Controllers\Api\Roles\IndexController as RoleIndexController;
-use App\Http\Controllers\Api\Roles\PermissionIndexController;
-use App\Http\Controllers\Api\Roles\ShowController as RoleShowController;
-use App\Http\Controllers\Api\Roles\StoreController as RoleStoreController;
-use App\Http\Controllers\Api\Roles\UpdateController as RoleUpdateController;
 use App\Http\Controllers\Api\Settings\DeleteAccountController;
 use App\Http\Controllers\Api\Settings\UpdatePasswordController;
 use App\Http\Controllers\Api\Settings\UpdateProfileController;
@@ -30,32 +24,6 @@ Route::prefix('auth')->group(function (): void {
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('user', MeController::class)->name('api.user');
-
-    Route::prefix('roles')->group(function (): void {
-        Route::get('/', RoleIndexController::class)
-            ->middleware('can:rbac.index')
-            ->name('api.roles.index');
-
-        Route::post('/', RoleStoreController::class)
-            ->middleware('can:rbac.create')
-            ->name('api.roles.store');
-
-        Route::get('{role}', RoleShowController::class)
-            ->middleware('can:rbac.show')
-            ->name('api.roles.show');
-
-        Route::put('{role}', RoleUpdateController::class)
-            ->middleware('can:rbac.update')
-            ->name('api.roles.update');
-
-        Route::delete('{role}', RoleDestroyController::class)
-            ->middleware('can:rbac.delete')
-            ->name('api.roles.destroy');
-    });
-
-    Route::get('permissions', PermissionIndexController::class)
-        ->middleware('can:rbac.index')
-        ->name('api.permissions.index');
 
     Route::prefix('notifications')->group(function (): void {
         Route::get('/', NotificationIndexController::class)->name('api.notifications.index');

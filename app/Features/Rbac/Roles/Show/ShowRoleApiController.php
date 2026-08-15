@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Api\Roles;
+namespace App\Features\Rbac\Roles\Show;
 
-use App\Http\Controllers\Controller;
-use App\Http\Resources\RoleResource;
+use App\Features\Rbac\RoleResource;
 use App\Models\RBAC\Role;
 
-class ShowController extends Controller
+class ShowRoleApiController
 {
     public function __invoke(Role $role): RoleResource
     {

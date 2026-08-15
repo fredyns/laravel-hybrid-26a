@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Api\Roles;
+namespace App\Features\Rbac\Roles\Delete;
 
-use App\Http\Controllers\Controller;
 use App\Models\RBAC\Role;
 use Illuminate\Http\JsonResponse;
 
-class DestroyController extends Controller
+class DeleteRoleApiController
 {
     public function __invoke(Role $role): JsonResponse
     {

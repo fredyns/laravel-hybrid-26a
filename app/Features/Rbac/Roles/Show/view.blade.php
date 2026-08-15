@@ -22,11 +22,11 @@
 
         <div class="flex items-center gap-2">
             @can('rbac.update')
-                <span class="cursor-not-allowed opacity-50">
+                <a href="{{ route('roles.edit', $role) }}">
                     <flux:button variant="primary" icon="pencil-square">
                         {{ __('Edit') }}
                     </flux:button>
-                </span>
+                </a>
             @endcan
 
             @can('rbac.delete')

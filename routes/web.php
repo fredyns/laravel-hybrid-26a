@@ -2,10 +2,6 @@
 
 use App\Http\Controllers\MyAccessController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\Roles\RoleCreateController;
-use App\Http\Controllers\Roles\RoleEditController;
-use App\Http\Controllers\Roles\RoleIndexController;
-use App\Http\Controllers\Roles\RoleShowController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -19,11 +15,6 @@ Route::post('layout-mode', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
     Route::get('my-access', MyAccessController::class)->name('my-access');
-
-    Route::get('roles', RoleIndexController::class)->name('roles.index');
-    Route::get('roles/create', RoleCreateController::class)->name('roles.create');
-    Route::get('roles/{role}', RoleShowController::class)->name('roles.show');
-    Route::get('roles/{role}/edit', RoleEditController::class)->name('roles.edit');
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
 });

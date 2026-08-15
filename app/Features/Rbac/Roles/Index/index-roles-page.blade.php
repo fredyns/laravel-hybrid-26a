@@ -1,5 +1,4 @@
-<x-layouts::app :title="__('Roles')">
-    <div class="flex h-full w-full flex-1 flex-col gap-6">
+<div class="flex h-full w-full flex-1 flex-col gap-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
             <flux:heading size="xl">{{ __('Roles') }}</flux:heading>
@@ -7,49 +6,50 @@
         </div>
 
         @can('rbac.create')
-            <span class="cursor-not-allowed opacity-50">
-                <flux:button variant="primary" icon="plus">
-                    {{ __('New role') }}
-                </flux:button>
-            </span>
+            <flux:button variant="primary" icon="plus" href="{{ route('roles.create') }}">
+                {{ __('New role') }}
+            </flux:button>
         @endcan
     </div>
 
     <div class="flex flex-wrap items-center gap-3">
-        <form method="GET" class="flex flex-wrap items-center gap-3 flex-1">
-            <flux:input
-                class="max-w-xs"
-                name="q"
-                value="{{ $search }}"
-                icon="magnifying-glass"
-                :placeholder="__('Search roles...')"
-                onchange="this.form.submit()"
-            />
+        <flux:input
+            class="max-w-xs"
+            wire:model.live.debounce.300ms="search"
+            icon="magnifying-glass"
+            :placeholder="__('Search roles...')"
+        />
 
-            <div class="flex items-center gap-1.5">
-                <a href="{{ route('roles.index') }}" class="inline-flex">
-                    <flux:button size="sm" :variant="$guard === '' ? 'primary' : 'outline'" class="rounded-full">
-                        {{ __('All') }}
-                    </flux:button>
-                </a>
+        <div class="flex items-center gap-1.5">
+            <flux:button
+                size="sm"
+                :variant="$activeGuard === '' ? 'primary' : 'outline'"
+                class="rounded-full"
+                wire:click="filterByGuard('')"
+            >
+                {{ __('All') }}
+            </flux:button>
 
-                @foreach ($guards as $guardValue)
-                    <a href="{{ route('roles.index', array_merge(request()->query(), ['guard' => $guardValue])) }}" class="inline-flex">
-                        <flux:button size="sm" :variant="$guard === $guardValue ? 'primary' : 'outline'" class="rounded-full">
-                            {{ $guardValue }}
-                        </flux:button>
-                    </a>
-                @endforeach
-            </div>
+            @foreach ($guards as $guardValue)
+                <flux:button
+                    size="sm"
+                    :variant="$activeGuard === $guardValue ? 'primary' : 'outline'"
+                    class="rounded-full"
+                    wire:click="filterByGuard('{{ $guardValue }}')"
+                    wire:key="guard-{{ $guardValue }}"
+                >
+                    {{ $guardValue }}
+                </flux:button>
+            @endforeach
+        </div>
 
-            <flux:spacer />
+        <flux:spacer />
 
-            <select name="per_page" onchange="this.form.submit()" class="max-w-[7rem] rounded border border-gray-300 px-2 py-1 text-sm">
-                <option value="10" {{ $perPage === 10 ? 'selected' : '' }}>10</option>
-                <option value="25" {{ $perPage === 25 ? 'selected' : '' }}>25</option>
-                <option value="50" {{ $perPage === 50 ? 'selected' : '' }}>50</option>
-            </select>
-        </form>
+        <select wire:model.live="perPage" class="max-w-[7rem] rounded border border-gray-300 px-2 py-1 text-sm">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+        </select>
     </div>
 
     <flux:table>
@@ -64,9 +64,9 @@
 
         <flux:table.rows>
             @forelse ($roles as $role)
-                <flux:table.row :key="$role->id">
+                <flux:table.row :key="$role->id" wire:key="role-{{ $role->id }}">
                     <flux:table.cell variant="strong">
-                        <a href="{{ route('roles.show', $role) }}" class="hover:underline">{{ $role->name }}</a>
+                        <a href="{{ route('roles.show', $role) }}" class="hover:underline" wire:navigate>{{ $role->name }}</a>
                     </flux:table.cell>
 
                     <flux:table.cell>
@@ -93,16 +93,16 @@
                     <flux:table.cell align="end">
                         <div class="flex justify-end gap-1">
                             <flux:tooltip :content="__('View')">
-                                <a href="{{ route('roles.show', $role) }}">
+                                <a href="{{ route('roles.show', $role) }}" wire:navigate>
                                     <flux:button size="sm" variant="ghost" icon="eye" :aria-label="__('View')" />
                                 </a>
                             </flux:tooltip>
 
                             @can('rbac.update')
                                 <flux:tooltip :content="__('Edit')">
-                                    <span class="cursor-not-allowed opacity-50">
+                                    <a href="{{ route('roles.edit', $role) }}" wire:navigate>
                                         <flux:button size="sm" variant="ghost" icon="pencil-square" :aria-label="__('Edit')" />
-                                    </span>
+                                    </a>
                                 </flux:tooltip>
                             @endcan
                         </div>
@@ -121,5 +121,4 @@
     </flux:table>
 
     {{ $roles->links() }}
-    </div>
-</x-layouts::app>
+</div>

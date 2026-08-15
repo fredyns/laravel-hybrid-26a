@@ -1,16 +1,15 @@
 <?php
 
-namespace App\Http\Controllers\Api\Roles;
+namespace App\Features\Rbac\Roles\Index;
 
 use App\Enums\AuthGuard;
-use App\Http\Controllers\Controller;
-use App\Http\Resources\RoleResource;
+use App\Features\Rbac\RoleResource;
 use App\Models\RBAC\Role;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
 
-class IndexController extends Controller
+class IndexRolesApiController
 {
     /**
      * List roles with optional search, guard filter and pagination.
