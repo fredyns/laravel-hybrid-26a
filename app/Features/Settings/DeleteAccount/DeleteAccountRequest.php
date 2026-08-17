@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Api\Settings;
+namespace App\Features\Settings\DeleteAccount;
 
 use Illuminate\Foundation\Http\FormRequest;
 

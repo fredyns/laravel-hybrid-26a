@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Api\Settings;
+namespace App\Features\Settings\UpdatePassword;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Settings\UpdatePasswordRequest;
 use Illuminate\Http\JsonResponse;
 
-class UpdatePasswordController extends Controller
+class UpdatePasswordApiController extends Controller
 {
     /**
      * Update the authenticated user's own password.

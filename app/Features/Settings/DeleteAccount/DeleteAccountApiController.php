@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Api\Settings;
+namespace App\Features\Settings\DeleteAccount;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Settings\DeleteAccountRequest;
 use Illuminate\Http\JsonResponse;
 
-class DeleteAccountController extends Controller
+class DeleteAccountApiController extends Controller
 {
     /**
      * Delete the authenticated user's own account and revoke all tokens.

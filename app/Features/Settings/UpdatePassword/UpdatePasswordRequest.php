@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Api\Settings;
+namespace App\Features\Settings\UpdatePassword;
 
 use App\Concerns\PasswordValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
