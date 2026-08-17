@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api\Auth;
+namespace App\Features\Auth\Login;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Auth\LoginRequest;
 use App\Features\User\UserResource;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 
-class LoginController extends Controller
+class LoginApiController extends Controller
 {
     public function __invoke(LoginRequest $request)
     {

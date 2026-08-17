@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api\Auth;
+namespace App\Features\Auth\Register;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Auth\RegisterRequest;
 use App\Features\User\UserResource;
+use App\Http\Controllers\Controller;
 use App\Models\User;
 
-class RegisterController extends Controller
+class RegisterApiController extends Controller
 {
     public function __invoke(RegisterRequest $request)
     {

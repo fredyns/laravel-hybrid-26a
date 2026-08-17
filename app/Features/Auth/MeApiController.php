@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\Api\Auth;
+namespace App\Features\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Features\User\UserResource;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class MeController extends Controller
+class MeApiController extends Controller
 {
     /**
      * The authenticated user together with their API-guard roles and
