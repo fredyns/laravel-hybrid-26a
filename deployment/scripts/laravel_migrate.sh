@@ -36,9 +36,9 @@ docker exec ${APP_CONTAINER} npm -v
 echo "\n install vendor (production, strict lock file)"
 docker exec ${APP_CONTAINER} composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader
 
-# NOTE: node dependencies are installed in full — laravel-echo and pusher-js are
-# listed under devDependencies but imported by resources/js/app.js, so
-# `--omit=dev` would break the Vite build.
+# NOTE: no --omit=dev here. This project keeps its build toolchain (vite,
+# tailwind, laravel-vite-plugin) plus laravel-echo/pusher-js under
+# `dependencies`, and devDependencies is empty, so there is nothing to omit.
 echo "\n install node dependencies"
 docker exec ${APP_CONTAINER} npm ci --no-audit --no-fund
 

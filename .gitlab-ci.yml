@@ -79,6 +79,36 @@ default:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 
+# Delivers the staging environment file from the GitLab CI/CD variable
+# STAGING_ENV_FILE (type: File, Protected) straight into the app directory on
+# the server. GitLab is the only source of truth for secrets — nothing is kept
+# on the server by hand, and nothing sensitive is committed.
+#
+# Must run AFTER the clone/pull step: the rebuild job deletes the whole
+# directory before re-cloning it.
+#
+# Nothing here echoes the file contents — job logs are visible to every
+# Developer on the project, and File variables cannot be masked.
+.push_staging_env: &push_staging_env
+  - |
+    if [ -z "$STAGING_ENV_FILE" ]; then
+      echo "ERROR: the CI/CD variable STAGING_ENV_FILE is not set."
+      echo ""
+      echo "  Settings > CI/CD > Variables:"
+      echo "    Key:       STAGING_ENV_FILE"
+      echo "    Type:      File"
+      echo "    Protected: yes"
+      echo "    Expand variable reference: no"
+      echo "    Value:     the filled-in deployment/env/staging/.env.example"
+      echo ""
+      exit 1
+    fi
+    APP_PATH="/home/administrator/${CI_PROJECT_NAME}"
+    echo "Delivering staging environment ($(wc -l < "$STAGING_ENV_FILE") lines) to ${APP_PATH}/.env"
+    scp -q "$STAGING_ENV_FILE" "$SSH_TARGET:${APP_PATH}/.env"
+    ssh "$SSH_TARGET" "cd ${APP_PATH} && chmod 640 .env && (chown 1000:1000 .env || echo 'WARNING: could not chown .env')"
+
+
 # ===========================================================================
 # BUILD
 # ===========================================================================
@@ -167,6 +197,7 @@ deploy:staging:containers:
   script:
     - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' bash -s" < deployment/scripts/app_delete.sh
     - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/scripts/git_clone.sh
+    - *push_staging_env
     - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/env/staging/deploy_container.sh
   environment:
     name: staging
@@ -187,6 +218,7 @@ deploy:staging:code:
   timeout: 20 minutes
   script:
     - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/scripts/git_pull.sh
+    - *push_staging_env
     - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/env/staging/deploy_code.sh
   environment:
     name: staging

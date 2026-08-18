@@ -11,7 +11,13 @@ echo "==================================================================="
 
 cd /home/administrator/${CI_PROJECT_NAME} || exit 1
 
-APP_ENV_NAME=staging bash deployment/scripts/env_install.sh
+# The pipeline delivers .env from the GitLab CI/CD variable STAGING_ENV_FILE
+# before this script runs. There is no server-side copy to fall back on.
+if [ ! -f .env ]; then
+    echo "ERROR: .env is missing — expected the pipeline to deliver it from the"
+    echo "       STAGING_ENV_FILE CI/CD variable before running this script."
+    exit 1
+fi
 
 bash deployment/scripts/laravel_migrate.sh
 
