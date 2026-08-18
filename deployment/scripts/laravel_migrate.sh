@@ -1,95 +1,91 @@
 #!/bin/bash
 
+# PARAMETERS:
+# - CI_PROJECT_NAME
+
+set -e
+
+APP_CONTAINER="laravelkit26_app"
+
 echo "==================================================================="
 echo "                            MIGRATE                                "
 echo "==================================================================="
 
-cd /home/administrator/${CI_PROJECT_NAME}
+cd /home/administrator/${CI_PROJECT_NAME} || exit 1
 
-APP_CONTAINER="laravelkit26_app"
-
-# Check if the Docker container sikom26_app is running
 if [ -z "$(docker ps --format '{{.Names}}' | grep "^${APP_CONTAINER}")" ]; then
     echo "||   Docker container ${APP_CONTAINER} is not running   ||"
     echo "==================================================================="
-    exit 0
+    exit 1
 fi
 
+if ! docker exec ${APP_CONTAINER} test -f /var/www/html/artisan; then
+    echo "|| Artisan file missing, maybe there is no code in /var/www/html ||"
+    echo "==================================================================="
+    exit 1
+fi
+
+echo "==================================================================="
 echo "||                        SYSTEM CHECK                           ||"
 echo "==================================================================="
 
-docker exec ${APP_CONTAINER} pwd
-docker exec ${APP_CONTAINER} ls -la
-
-echo "==================================================================="
-
-# check versions
-docker exec ${APP_CONTAINER} which php
 docker exec ${APP_CONTAINER} php -v
-docker exec ${APP_CONTAINER} which node
 docker exec ${APP_CONTAINER} node -v
-docker exec ${APP_CONTAINER} which npm
 docker exec ${APP_CONTAINER} npm -v
 
-echo "==================================================================="
-set -x
+echo "\n install vendor (production, strict lock file)"
+docker exec ${APP_CONTAINER} composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader
 
-if [ -z "$(docker exec ${APP_CONTAINER} ls /var/www/html/artisan)" ]; then
-    echo "|| Artisan file missing, maybe there is no code in /var/www/html ||"
-    echo "==================================================================="
-    exit 0
-fi
+# NOTE: node dependencies are installed in full — laravel-echo and pusher-js are
+# listed under devDependencies but imported by resources/js/app.js, so
+# `--omit=dev` would break the Vite build.
+echo "\n install node dependencies"
+docker exec ${APP_CONTAINER} npm ci --no-audit --no-fund
 
-echo "install vendor (strict lock file)"
-docker exec ${APP_CONTAINER} composer install --no-interaction --prefer-dist --optimize-autoloader
-
-echo "install node dependencies"
-docker exec ${APP_CONTAINER} npm install --no-audit --no-fund
-
-echo "set permission"
-docker exec ${APP_CONTAINER} id www-data
-docker exec ${APP_CONTAINER} mkdir -p /var/www/html/storage/logs
+echo "\n set permissions"
+# php-fpm workers run as `app` (uid 1000) per deployment/docker/php/www.conf.
+docker exec ${APP_CONTAINER} mkdir -p /var/www/html/storage/logs /var/www/html/bootstrap/cache
 docker exec ${APP_CONTAINER} sh -lc 'touch /var/www/html/storage/logs/laravel.log || true'
-docker exec ${APP_CONTAINER} chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap
-docker exec ${APP_CONTAINER} sh -lc 'chown www-data:www-data /var/www/html/storage/logs/laravel.log 2>/dev/null || true'
-docker exec ${APP_CONTAINER} chmod -R 777 /var/www/html/bootstrap
-docker exec ${APP_CONTAINER} chmod -R 777 /var/www/html/storage
+docker exec ${APP_CONTAINER} chown -R app:app /var/www/html/storage /var/www/html/bootstrap/cache
+docker exec ${APP_CONTAINER} sh -lc 'find /var/www/html/storage /var/www/html/bootstrap/cache -type d -exec chmod 775 {} +'
 
-echo "prepare laravel"
-docker exec ${APP_CONTAINER} php artisan key:generate
-docker exec ${APP_CONTAINER} php artisan storage:link
-
-echo "optimize laravel"
-docker exec ${APP_CONTAINER} php artisan optimize:clear
-docker exec ${APP_CONTAINER} php artisan route:clear
-docker exec ${APP_CONTAINER} composer dump-autoload -o
-
-echo "build frontend assets"
-docker exec ${APP_CONTAINER} mkdir -p /var/www/html/public/build
-
-# Run build and capture exit code
-if docker exec ${APP_CONTAINER} npm run build; then
-    echo "npm run build succeeded"
+echo "\n prepare laravel"
+# APP_KEY is provisioned with the environment file. It is generated here only on
+# a first-time deploy — regenerating it would invalidate every session, signed
+# URL, and encrypted column.
+if docker exec ${APP_CONTAINER} sh -lc 'grep -qE "^APP_KEY=base64:.+" /var/www/html/.env'; then
+    echo "APP_KEY already set — skipping key:generate"
 else
-    echo "npm run build FAILED - checking for partial output"
+    echo "APP_KEY missing — generating one (first provisioning only)"
+    docker exec ${APP_CONTAINER} php artisan key:generate --force
 fi
 
-# Verify manifest was created
+docker exec ${APP_CONTAINER} php artisan storage:link || true
+
+echo "\n build frontend assets"
+docker exec ${APP_CONTAINER} npm run build
+
 if docker exec ${APP_CONTAINER} test -f /var/www/html/public/build/manifest.json; then
     echo "Vite manifest.json found OK"
 else
-    echo "ERROR: Vite manifest.json NOT FOUND after build!"
-    echo "Trying alternative: using php artisan vite:build..."
-    docker exec ${APP_CONTAINER} php artisan vite:build 2>/dev/null || true
-    docker exec ${APP_CONTAINER} php artisan vendor:publish --tag=laravel-assets --force 2>/dev/null || true
+    echo "ERROR: Vite manifest.json NOT FOUND after build — aborting deploy."
+    exit 1
 fi
 
-echo "migrate database"
+echo "\n migrate database"
 docker exec ${APP_CONTAINER} php artisan migrate:status
 docker exec ${APP_CONTAINER} php artisan migrate --force
 
 # docker exec ${APP_CONTAINER} php artisan db:seed --class=SeederClass --force
 
-echo "reload php-fpm"
+echo "\n rebuild caches"
+docker exec ${APP_CONTAINER} php artisan optimize:clear
+docker exec ${APP_CONTAINER} php artisan config:cache
+docker exec ${APP_CONTAINER} php artisan event:cache
+docker exec ${APP_CONTAINER} php artisan view:cache
+# route:cache is deliberately NOT run: routes/web.php and routes/settings.php
+# register closure routes, which cannot be serialised.
+
+echo "\n reload php-fpm"
 docker exec ${APP_CONTAINER} kill -USR2 1
 echo "PHP-FPM reload signaled"

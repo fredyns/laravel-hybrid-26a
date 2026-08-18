@@ -34,3 +34,8 @@ yarn-error.log
 *.old
 *.tmp
 *~*
+
+# Deployed environment files hold real credentials — only the templates are
+# committed. deployment/env/local/.env stays tracked: it is local-dev defaults.
+deployment/env/*/.env
+!deployment/env/local/.env
