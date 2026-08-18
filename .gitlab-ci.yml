@@ -1,130 +1,245 @@
-variables:
-  GIT_DEPTH: 0 # Disable shallow clone
-  SOPS_VERSION: "v3.8.1"
-  LOCAL_BIN: "$CI_PROJECT_DIR/bin"
-
-
+# ---------------------------------------------------------------------------
+# Stages are lifecycle phases, not environments. The environment lives in the
+# job name (`deploy:staging:code`) and in `environment:`, so adding production
+# later means adding jobs, not duplicating the stage list.
+# ---------------------------------------------------------------------------
 stages:
-  - staging_containers
-  - staging_pull
-  - checker
+  - build
+  - test
+  - deploy
+  - verify
 
-staging_rebuild:
-  stage: staging_containers
+variables:
+  GIT_DEPTH: "20"
+  COMPOSER_NO_INTERACTION: "1"
+  COMPOSER_CACHE_DIR: "$CI_PROJECT_DIR/.cache/composer"
+  npm_config_cache: "$CI_PROJECT_DIR/.cache/npm"
+
+# Run on merge requests and on branch pushes, but never both for the same commit.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+default:
+  interruptible: true
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+
+
+# ===========================================================================
+# TEMPLATES
+# ===========================================================================
+
+# PHP 8.5 CLI matching deployment/docker/php/Dockerfile.
+.php:
+  image: php:8.5-cli-alpine
   before_script:
-    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
-    - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
-    - chmod 700 ~/.ssh/id_rsa
-    - eval "$(ssh-agent -s)"
-    - ssh-add ~/.ssh/id_rsa
-    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - apk add --no-cache git unzip libzip
+    - apk add --no-cache --virtual .build-deps $PHPIZE_DEPS libzip-dev
+    - docker-php-ext-install -j"$(nproc)" zip pcntl
+    - apk del .build-deps
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    # Flux Pro lives behind composer auth; set FLUX_USERNAME / FLUX_LICENSE_KEY
+    # as masked CI/CD variables (Settings > CI/CD > Variables).
+    - composer config http-basic.composer.fluxui.dev "$FLUX_USERNAME" "$FLUX_LICENSE_KEY"
 
+# glibc, not musl: the pinned optionalDependencies are *-linux-x64-gnu builds.
+.node:
+  image: node:22-bookworm-slim
+
+# Single source of truth for SSH setup — previously copy-pasted into six jobs.
+.ssh_staging:
+  image: alpine:3.21
+  variables:
+    SSH_TARGET: "${SSH_USER_STAGING}@${SSH_STAGING}"
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval "$(ssh-agent -s)"
+    # Key is piped straight into the agent — never written to disk.
+    - printf '%s\n' "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - |
+      if [ -n "$SSH_KNOWN_HOSTS_STAGING" ]; then
+        printf '%s\n' "$SSH_KNOWN_HOSTS_STAGING" > ~/.ssh/known_hosts
+      else
+        echo "WARNING: SSH_KNOWN_HOSTS_STAGING is unset — trusting the host on first sight."
+        echo "Set it (ssh-keyscan -H <host>) to protect the deploy against MITM."
+        ssh-keyscan -H "$SSH_STAGING" >> ~/.ssh/known_hosts 2>/dev/null
+      fi
+      chmod 600 ~/.ssh/known_hosts
+
+.staging_only:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+
+# ===========================================================================
+# BUILD
+# ===========================================================================
+
+build:vendor:
+  extends: .php
+  stage: build
+  cache:
+    key:
+      files:
+        - composer.lock
+    paths:
+      - .cache/composer
   script:
-    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' bash -s" < deployment/scripts/app_delete.sh
-    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/scripts/git_clone.sh
-    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/env/staging/deploy_container.sh
+    - composer install --prefer-dist --no-progress --optimize-autoloader
+  artifacts:
+    expire_in: 1 hour
+    paths:
+      - vendor/
+
+build:assets:
+  extends: .node
+  stage: build
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .cache/npm
+  script:
+    - npm ci --no-audit --no-fund
+    - npm run build
+  artifacts:
+    expire_in: 1 hour
+    paths:
+      - public/build/
+
+
+# ===========================================================================
+# TEST — none of this existed before; main was deployed unverified.
+# ===========================================================================
+
+test:lint:
+  extends: .php
+  stage: test
+  needs: [build:vendor]
+  script:
+    - composer lint:check
+
+test:types:
+  extends: .php
+  stage: test
+  needs: [build:vendor]
+  script:
+    - composer types:check
+
+test:pest:
+  extends: .php
+  stage: test
+  needs:
+    - build:vendor
+    - build:assets
+  script:
+    - cp .env.example .env
+    - php artisan key:generate
+    - php artisan test --compact
+
+
+# ===========================================================================
+# DEPLOY — staging
+# ===========================================================================
+
+# Destructive: tears the app down, re-clones, rebuilds every container.
+# Manual on purpose. `allow_failure: false` makes the block explicit rather
+# than relying on the manual-job default.
+deploy:staging:containers:
+  extends: .ssh_staging
+  stage: deploy
+  interruptible: false
+  resource_group: staging
+  timeout: 30 minutes
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: false
+  script:
+    - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' bash -s" < deployment/scripts/app_delete.sh
+    - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/scripts/git_clone.sh
+    - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/env/staging/deploy_container.sh
   environment:
     name: staging
     url: "$APP_URL"
-  when: manual
-  only:
-    - main
+    deployment_tier: staging
 
-
-staging_deploy:
-  stage: staging_pull
-  before_script:
-    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
-    - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
-    - chmod 700 ~/.ssh/id_rsa
-    - eval "$(ssh-agent -s)"
-    - ssh-add ~/.ssh/id_rsa
-    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+deploy:staging:code:
+  extends:
+    - .ssh_staging
+    - .staging_only
+  stage: deploy
+  needs:
+    - test:lint
+    - test:types
+    - test:pest
+  interruptible: false
+  resource_group: staging
+  timeout: 20 minutes
   script:
-    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/scripts/git_pull.sh
-    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/env/staging/deploy_code.sh
+    - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/scripts/git_pull.sh
+    - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/env/staging/deploy_code.sh
   environment:
     name: staging
     url: "$APP_URL"
-  only:
-    - main
+    deployment_tier: staging
 
 
-check_db_connection:
-  stage: checker
-  image: postgres:18-alpine
-  before_script:
-    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
-    - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
-    - chmod 700 ~/.ssh/id_rsa
-    - eval "$(ssh-agent -s)"
-    - ssh-add ~/.ssh/id_rsa
-    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+# ===========================================================================
+# VERIFY — read-only diagnostics
+# ===========================================================================
 
+verify:staging:containers:
+  extends:
+    - .ssh_staging
+    - .staging_only
+  stage: verify
+  needs: [deploy:staging:code]
   script:
-    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "
-      echo '=== SIKOM26 Project Containers ===';
-      docker ps --filter 'label=com.docker.compose.project=sikom-2026' -a;
-      echo '=== Postgres Container Logs ===';
-      docker logs sikom26_postgres 2>&1 | tail -50;
-      echo '=== App Container Logs ===';
-      docker logs sikom26_app 2>&1 | tail -20;
-      echo '=== Running Containers ===';
-      docker ps;
-      echo '=== Docker Networks ===';
-      docker network ls | grep sikom;
-      echo '=== sikom26_net Details ===';
-      docker network inspect sikom-2026_sikom26_net 2>/dev/null || echo 'Network not found';
-      echo '=== Storage Directory ===';
-      ls -la /home/administrator/sikom-2026/storage/docker/ 2>/dev/null || echo 'Storage not found';
-      echo '=== Docker Compose Check ===';
-      cd /home/administrator/sikom-2026 && docker compose config 2>&1 | head -50 || echo 'Docker compose config failed';
-      "
+    - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' bash -s" < deployment/scripts/check_containers.sh
   environment:
     name: staging
-  when: manual
-  only:
-    - main
+    action: verify
 
-check_routes:
-  stage: checker
-  before_script:
-    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
-    - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
-    - chmod 700 ~/.ssh/id_rsa
-    - eval "$(ssh-agent -s)"
-    - ssh-add ~/.ssh/id_rsa
-    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+verify:staging:routes:
+  extends: .ssh_staging
+  stage: verify
+  needs: [deploy:staging:code]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: true
   script:
-    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' sh -s" < deployment/scripts/check_routes.sh
+    - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' bash -s" < deployment/scripts/check_routes.sh
   environment:
     name: staging
-  when: manual
-  only:
-    - main
+    action: verify
 
 
-staging_set_origin:
-  stage: checker
-  before_script:
-    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
-    - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
-    - chmod 700 ~/.ssh/id_rsa
-    - eval "$(ssh-agent -s)"
-    - ssh-add ~/.ssh/id_rsa
-    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+# ===========================================================================
+# MAINTENANCE — one-off write operations, kept out of the verify group
+# ===========================================================================
+
+maintenance:staging:git-remote:
+  extends: .ssh_staging
+  stage: verify
+  needs: []
+  resource_group: staging
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: true
   script:
-    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "
-      cd /home/administrator/${CI_PROJECT_NAME};
-      git remote set-url origin "https://${token_pull}@gitlab.bki.co.id/${CI_PROJECT_PATH}.git";
-      "
+    - ssh "$SSH_TARGET" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/scripts/set_git_remote.sh
   environment:
     name: staging
-  when: manual
-  only:
-    - main
+    action: prepare
