@@ -1,0 +1,130 @@
+variables:
+  GIT_DEPTH: 0 # Disable shallow clone
+  SOPS_VERSION: "v3.8.1"
+  LOCAL_BIN: "$CI_PROJECT_DIR/bin"
+
+
+stages:
+  - staging_containers
+  - staging_pull
+  - checker
+
+staging_rebuild:
+  stage: staging_containers
+  before_script:
+    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+
+  script:
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' bash -s" < deployment/scripts/app_delete.sh
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/scripts/git_clone.sh
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/env/staging/deploy_container.sh
+  environment:
+    name: staging
+    url: "$APP_URL"
+  when: manual
+  only:
+    - main
+
+
+staging_deploy:
+  stage: staging_pull
+  before_script:
+    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+  script:
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/scripts/git_pull.sh
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' bash -s" < deployment/env/staging/deploy_code.sh
+  environment:
+    name: staging
+    url: "$APP_URL"
+  only:
+    - main
+
+
+check_db_connection:
+  stage: checker
+  image: postgres:18-alpine
+  before_script:
+    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+
+  script:
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "
+      echo '=== SIKOM26 Project Containers ===';
+      docker ps --filter 'label=com.docker.compose.project=sikom-2026' -a;
+      echo '=== Postgres Container Logs ===';
+      docker logs sikom26_postgres 2>&1 | tail -50;
+      echo '=== App Container Logs ===';
+      docker logs sikom26_app 2>&1 | tail -20;
+      echo '=== Running Containers ===';
+      docker ps;
+      echo '=== Docker Networks ===';
+      docker network ls | grep sikom;
+      echo '=== sikom26_net Details ===';
+      docker network inspect sikom-2026_sikom26_net 2>/dev/null || echo 'Network not found';
+      echo '=== Storage Directory ===';
+      ls -la /home/administrator/sikom-2026/storage/docker/ 2>/dev/null || echo 'Storage not found';
+      echo '=== Docker Compose Check ===';
+      cd /home/administrator/sikom-2026 && docker compose config 2>&1 | head -50 || echo 'Docker compose config failed';
+      "
+  environment:
+    name: staging
+  when: manual
+  only:
+    - main
+
+check_routes:
+  stage: checker
+  before_script:
+    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+  script:
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "CI_PROJECT_NAME='$CI_PROJECT_NAME' CI_PROJECT_PATH='$CI_PROJECT_PATH' token_pull='$token_pull' sh -s" < deployment/scripts/check_routes.sh
+  environment:
+    name: staging
+  when: manual
+  only:
+    - main
+
+
+staging_set_origin:
+  stage: checker
+  before_script:
+    - 'which ssh-agent || ( apk update && apk add --no-cache openssh )'
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_STAGING" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+  script:
+    - ssh -o StrictHostKeyChecking=no "${SSH_USER_STAGING}@${SSH_STAGING}" "
+      cd /home/administrator/${CI_PROJECT_NAME};
+      git remote set-url origin "https://${token_pull}@gitlab.bki.co.id/${CI_PROJECT_PATH}.git";
+      "
+  environment:
+    name: staging
+  when: manual
+  only:
+    - main
